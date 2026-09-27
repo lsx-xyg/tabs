@@ -374,6 +374,9 @@ const dragList = computed({
           <Button variant="ghost" size="icon-sm" @click="toggleTheme()" :title="isDark ? '切换为浅色' : '切换为深色'">
             {{ isDark ? '☀' : '☾' }}
           </Button>
+          <span v-if="store.offline" class="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded">
+            离线{{ store.queueCount ? ` · ${store.queueCount} 条待同步` : '' }}
+          </span>
           <Input v-model="store.searchQuery" placeholder="搜索…" class="w-32 sm:w-48" />
           <Button variant="ghost" size="sm" title="导出书签" @click="exportBookmarks">导出</Button>
           <Button variant="ghost" size="sm" title="从 HTML 导入" @click="importInput?.click()">导入</Button>

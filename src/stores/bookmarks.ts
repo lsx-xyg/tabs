@@ -22,6 +22,13 @@ export interface Bookmark {
   updatedAt: string
 }
 
+interface QueuedOp {
+  method: string
+  path: string
+  body: unknown
+  localId: string
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     credentials: 'include',
@@ -36,20 +43,15 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 const LS_CATS = 'tabs-local-categories'
 const LS_BMS = 'tabs-local-bookmarks'
+const LS_QUEUE = 'tabs-sync-queue'
 
 function loadLS<T>(key: string): T[] {
-  try {
-    return JSON.parse(localStorage.getItem(key) ?? '[]')
-  } catch {
-    return []
-  }
+  try { return JSON.parse(localStorage.getItem(key) ?? '[]') } catch { return [] }
 }
 function saveLS(key: string, data: unknown) {
   localStorage.setItem(key, JSON.stringify(data))
 }
-function uuid() {
-  return crypto.randomUUID()
-}
+function uuid() { return crypto.randomUUID() }
 
 export const useBookmarkStore = defineStore('bookmarks', () => {
   const categories = ref<Category[]>([])
@@ -58,6 +60,8 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
   const loading = ref(false)
   const searchQuery = ref('')
   const localMode = ref(false)
+  const offline = ref(!navigator.onLine)
+  const queue = ref<QueuedOp[]>(loadLS<QueuedOp>(LS_QUEUE))
 
   const activeCategory = computed(() =>
     categories.value.find((c) => c.id === activeCategoryId.value) ?? null,
@@ -67,22 +71,58 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     const q = searchQuery.value.trim().toLowerCase()
     let list = bookmarks.value
     if (activeCategoryId.value) list = list.filter((b) => b.categoryId === activeCategoryId.value)
-    if (q) {
-      list = bookmarks.value.filter(
-        (b) =>
-          b.name.toLowerCase().includes(q) || b.url.toLowerCase().includes(q),
-      )
-    }
+    if (q) list = bookmarks.value.filter(
+      (b) => b.name.toLowerCase().includes(q) || b.url.toLowerCase().includes(q),
+    )
     return [...list].sort((a, b) => a.sortOrder - b.sortOrder)
   })
 
-  // persist local mode
+  const queueCount = computed(() => queue.value.length)
+
+  // persist local mode data
   watch([categories, bookmarks], () => {
     if (localMode.value) {
       saveLS(LS_CATS, categories.value)
       saveLS(LS_BMS, bookmarks.value)
     }
   }, { deep: true })
+
+  // persist queue
+  watch(queue, (q) => saveLS(LS_QUEUE, q), { deep: true })
+
+  // online/offline listeners
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+      offline.value = false
+      void flushQueue()
+    })
+    window.addEventListener('offline', () => {
+      offline.value = true
+    })
+  }
+
+  function enqueue(op: Omit<QueuedOp, 'localId'>) {
+    queue.value.push({ ...op, localId: uuid() })
+  }
+
+  async function flushQueue() {
+    if (!queue.value.length || localMode.value) return
+    const pending = [...queue.value]
+    queue.value = []
+    const failed: QueuedOp[] = []
+    for (const op of pending) {
+      try {
+        await api(op.path, { method: op.method, body: JSON.stringify(op.body) })
+      } catch {
+        failed.push(op)
+      }
+    }
+    if (failed.length) queue.value = [...failed, ...queue.value]
+    // after flush, reload to get canonical IDs
+    if (pending.length && !failed.length) {
+      await loadAll()
+    }
+  }
 
   async function loadAll() {
     loading.value = true
@@ -97,11 +137,15 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
         ])
         categories.value = cats
         bookmarks.value = bms
+        // flush any pending ops after we have fresh data
+        void flushQueue()
       }
       if (!activeCategoryId.value) {
         const def = categories.value.find((c) => c.isDefault) ?? categories.value[0]
         activeCategoryId.value = def?.id ?? null
       }
+    } catch {
+      // offline load fallback: use whatever we have in memory
     } finally {
       loading.value = false
     }
@@ -115,90 +159,90 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
   async function addCategory(name: string) {
     const now = new Date().toISOString()
     const c: Category = {
-      id: uuid(),
-      userId: 'local',
-      name,
+      id: uuid(), userId: 'local', name,
       sortOrder: categories.value.length,
       isDefault: categories.value.length === 0,
       createdAt: now,
     }
-    if (!localMode.value) {
-      return api<Category>('/api/categories', {
-        method: 'POST',
-        body: JSON.stringify({ name }),
-      }).then((created) => {
-        categories.value.push(created)
-        if (!activeCategoryId.value) activeCategoryId.value = created.id
-      })
-    }
+    // optimistic add
     categories.value.push(c)
     if (!activeCategoryId.value) activeCategoryId.value = c.id
+
+    if (localMode.value) return
+    try {
+      await api('/api/categories', { method: 'POST', body: JSON.stringify({ name }) })
+    } catch {
+      enqueue({ method: 'POST', path: '/api/categories', body: { name } })
+    }
   }
 
   async function deleteCategory(id: string) {
-    if (!localMode.value) await api(`/api/categories/${id}`, { method: 'DELETE' })
     categories.value = categories.value.filter((c) => c.id !== id)
     bookmarks.value = bookmarks.value.filter((b) => b.categoryId !== id)
-    if (activeCategoryId.value === id) {
-      activeCategoryId.value = categories.value[0]?.id ?? null
+    if (activeCategoryId.value === id) activeCategoryId.value = categories.value[0]?.id ?? null
+    if (localMode.value) return
+    try {
+      await api(`/api/categories/${id}`, { method: 'DELETE' })
+    } catch {
+      enqueue({ method: 'DELETE', path: `/api/categories/${id}`, body: null })
     }
   }
 
   async function addBookmark(input: { name: string; url: string; categoryId: string | null }) {
-    if (!localMode.value) {
-      return api<Bookmark>('/api/bookmarks', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      }).then((bm) => bookmarks.value.push(bm))
-    }
     const now = new Date().toISOString()
     let url = input.url.trim()
     if (!/^https?:\/\//i.test(url)) url = `https://${url}`
     const bm: Bookmark = {
-      id: uuid(),
-      userId: 'local',
-      categoryId: input.categoryId,
-      name: input.name,
-      url,
-      iconUrl: null,
+      id: uuid(), userId: 'local', categoryId: input.categoryId,
+      name: input.name, url, iconUrl: null,
       sortOrder: bookmarks.value.filter((b) => b.categoryId === input.categoryId).length,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     }
+    // optimistic add
     bookmarks.value.push(bm)
+
+    if (localMode.value) return
+    try {
+      await api('/api/bookmarks', { method: 'POST', body: JSON.stringify({ name: input.name, url, categoryId: input.categoryId }) })
+    } catch {
+      enqueue({ method: 'POST', path: '/api/bookmarks', body: { name: input.name, url, categoryId: input.categoryId } })
+    }
   }
 
   async function updateBookmark(id: string, patch: Partial<Bookmark>) {
-    if (!localMode.value) {
-      return api<Bookmark>(`/api/bookmarks/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      }).then((updated) => {
-        const i = bookmarks.value.findIndex((b) => b.id === id)
-        if (i >= 0) bookmarks.value[i] = updated
-      })
-    }
+    // optimistic update
     const i = bookmarks.value.findIndex((b) => b.id === id)
     if (i >= 0) bookmarks.value[i] = { ...bookmarks.value[i], ...patch, updatedAt: new Date().toISOString() }
+    if (localMode.value) return
+    try {
+      await api(`/api/bookmarks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+    } catch {
+      enqueue({ method: 'PATCH', path: `/api/bookmarks/${id}`, body: patch })
+    }
   }
 
   async function deleteBookmark(id: string) {
-    if (!localMode.value) await api(`/api/bookmarks/${id}`, { method: 'DELETE' })
     bookmarks.value = bookmarks.value.filter((b) => b.id !== id)
+    if (localMode.value) return
+    try {
+      await api(`/api/bookmarks/${id}`, { method: 'DELETE' })
+    } catch {
+      enqueue({ method: 'DELETE', path: `/api/bookmarks/${id}`, body: null })
+    }
   }
 
   async function reorderBookmarks(ids: string[]) {
-    if (!localMode.value) {
-      await api('/api/bookmarks/reorder', {
-        method: 'POST',
-        body: JSON.stringify({ ids }),
-      })
-    }
     const sorted = [...ids]
       .map((id) => bookmarks.value.find((b) => b.id === id))
       .filter(Boolean) as Bookmark[]
     const rest = bookmarks.value.filter((b) => !ids.includes(b.id))
     bookmarks.value = [...sorted, ...rest]
+    if (localMode.value) return
+    try {
+      await api('/api/bookmarks/reorder', { method: 'POST', body: JSON.stringify({ ids }) })
+    } catch {
+      enqueue({ method: 'POST', path: '/api/bookmarks/reorder', body: { ids } })
+    }
   }
 
   function selectCategory(id: string | null) {
@@ -207,22 +251,11 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
   }
 
   return {
-    categories,
-    bookmarks,
-    activeCategoryId,
-    activeCategory,
-    loading,
-    searchQuery,
-    localMode,
+    categories, bookmarks, activeCategoryId, activeCategory,
+    loading, searchQuery, localMode, offline, queueCount,
     visibleBookmarks,
-    loadAll,
-    enterLocalMode,
-    addCategory,
-    deleteCategory,
-    addBookmark,
-    updateBookmark,
-    deleteBookmark,
-    reorderBookmarks,
-    selectCategory,
+    loadAll, enterLocalMode,
+    addCategory, deleteCategory, addBookmark, updateBookmark,
+    deleteBookmark, reorderBookmarks, selectCategory,
   }
 })
