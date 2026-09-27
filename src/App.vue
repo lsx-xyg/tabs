@@ -33,6 +33,15 @@ const searchExpanded = ref(false)
 const userMenuOpen = ref(false)
 const pcMenuOpen = ref(false)
 
+// toast
+const toasts = ref<{ id: number; msg: string; type: 'info' | 'success' | 'warn' }[]>([])
+let toastId = 0
+function toast(msg: string, type: 'info' | 'success' | 'warn' = 'info') {
+  const id = ++toastId
+  toasts.value.push({ id, msg, type })
+  setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id) }, 2500)
+}
+
 const mode = ref<'login' | 'signup'>('login')
 const authDialogOpen = ref(false)
 const email = ref('')
@@ -197,6 +206,7 @@ async function submitBookmark() {
       })
     }
     bmDialogOpen.value = false
+    toast(store.offline ? '已保存到本地，联网后自动同步' : '书签已保存', store.offline ? 'warn' : 'success')
   } catch (e: any) {
     bmError.value = e.message ?? '保存失败'
   } finally {
@@ -364,6 +374,7 @@ async function onCategoryDrop(e: DragEvent, categoryId: string | null) {
   const bm = store.bookmarks.find((b) => b.id === bmId)
   if (!bm || bm.categoryId === categoryId) return
   await store.updateBookmark(bmId, { categoryId } as Partial<Bookmark>)
+  toast(`已移动到「${categoryId ? store.categories.find((c) => c.id === categoryId)?.name ?? '分类' : '默认分类'}」`, 'success')
 }
 
 function onDragOver(e: DragEvent) {
@@ -493,7 +504,7 @@ const dragList = computed({
             @dragover="onDragOver"
             @dragleave="onDragLeave"
             @drop="onCategoryDrop($event, null)"
-          >全部</button>
+          >默认分类</button>
           <div v-for="c in store.categories" :key="c.id" class="group flex items-center gap-1">
             <button
               class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate drop-target"
@@ -520,7 +531,7 @@ const dragList = computed({
       <section class="flex-1">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold">
-            {{ store.searchQuery ? '搜索结果' : (store.activeCategory?.name ?? '全部书签') }}
+            {{ store.searchQuery ? '搜索结果' : (store.activeCategory?.name ?? '默认分类') }}
             <span class="ml-2 text-sm font-normal text-muted-foreground">{{ store.visibleBookmarks.length }} 个</span>
           </h2>
           <Button size="sm" @click="openAddBookmark">+ 添加书签</Button>
@@ -591,7 +602,7 @@ const dragList = computed({
           <Input v-model="bmName" placeholder="名称（如 GitHub）" />
           <Input v-model="bmUrl" placeholder="URL（如 github.com）" />
           <select v-model="bmCategoryId" class="flex h-9 w-full rounded-md border bg-transparent px-3 text-sm">
-            <option value="">未分类</option>
+            <option value="">默认分类</option>
             <option v-for="c in store.categories" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
           <p v-if="bmError" class="text-sm text-destructive">{{ bmError }}</p>
@@ -656,11 +667,26 @@ const dragList = computed({
       @confirm="confirmState.onConfirm?.()"
     />
   </div>
+
+  <!-- toasts -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center">
+    <div
+      v-for="t in toasts"
+      :key="t.id"
+      class="rounded-lg border px-4 py-2 text-sm shadow-lg bg-card"
+      :class="{
+        'border-green-500/30 text-green-600 dark:text-green-400': t.type === 'success',
+        'border-amber-500/30 text-amber-600 dark:text-amber-400': t.type === 'warn',
+        'border-border text-foreground': t.type === 'info',
+      }"
+    >{{ t.msg }}</div>
+  </div>
 </template>
 
 <style scoped>
 .drop-target.drag-over {
-  outline: 2px solid hsl(var(--primary));
+  background: hsl(var(--primary) / 0.15) !important;
+  outline: 2px dashed hsl(var(--primary));
   outline-offset: -2px;
 }
 </style>
