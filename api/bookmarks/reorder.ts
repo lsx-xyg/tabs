@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import { db } from '../../src/server/db/db.js'
 import { bookmarks } from '../../src/server/db/schema.js'
@@ -25,7 +25,7 @@ export default async function handler(req: any, res: any) {
     await db
       .update(bookmarks)
       .set({ sortOrder: i, updatedAt: new Date() })
-      .where(inArray(bookmarks.id, ids))
+      .where(eq(bookmarks.id, ids[i]))
   }
   return res.status(200).json({ ok: true })
 }
