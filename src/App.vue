@@ -31,6 +31,7 @@ const toggleTheme = useToggle(isDark)
 const sidebarOpen = ref(false)
 const searchExpanded = ref(false)
 const userMenuOpen = ref(false)
+const pcMenuOpen = ref(false)
 
 const mode = ref<'login' | 'signup'>('login')
 const authDialogOpen = ref(false)
@@ -398,8 +399,12 @@ const dragList = computed({
             <Moon v-else class="w-4 h-4" />
           </Button>
 
-          <!-- user dropdown -->
-          <div class="relative">
+          <!-- user dropdown: hover on PC, click on mobile -->
+          <div
+            class="relative"
+            @mouseenter="pcMenuOpen = true"
+            @mouseleave="pcMenuOpen = false"
+          >
             <button
               class="flex items-center gap-1.5 rounded-full hover:bg-accent px-2 py-1"
               @click="userMenuOpen = !userMenuOpen"
@@ -409,7 +414,7 @@ const dragList = computed({
               </div>
             </button>
             <div
-              v-if="userMenuOpen"
+              v-if="userMenuOpen || pcMenuOpen"
               class="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg py-1 z-50"
               @click.outside="userMenuOpen = false"
             >
@@ -501,6 +506,7 @@ const dragList = computed({
           :handle="'.drag-handle'"
           ghost-class="opacity-40"
           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+          style="touch-action: none"
           @end="onDragEnd"
         >
           <div
@@ -508,7 +514,7 @@ const dragList = computed({
             :key="bm.id"
             class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2"
           >
-            <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none shrink-0 px-0.5" title="拖拽排序"><GripVertical class="w-4 h-4" /></span>
+            <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none shrink-0 p-1 -m-1" style="touch-action: none" title="拖拽排序"><GripVertical class="w-4 h-4" /></span>
             <a
               :href="bm.url"
               target="_blank"
