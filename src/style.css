@@ -4,6 +4,16 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
 
+/* smooth theme transition */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+html *, html *::before, html *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

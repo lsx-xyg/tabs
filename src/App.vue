@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useDark, useToggle } from '@vueuse/core'
+import { useDark, usePreferredDark } from '@vueuse/core'
 import { VueDraggable } from 'vue-draggable-plus'
-import { Search, Sun, Moon, Menu, Plus, Pencil, Trash2, GripVertical, LogOut, Trash, Upload, Download, X } from 'lucide-vue-next'
+import { Search, Sun, Moon, Monitor, Menu, Plus, Pencil, Trash2, GripVertical, LogOut, Trash, Upload, Download, X } from 'lucide-vue-next'
 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -23,9 +23,27 @@ const store = useBookmarkStore()
 const isSignedIn = computed(() => !!sessionState.value?.data)
 const userEmail = computed(() => sessionState.value?.data?.user?.email ?? '')
 
-// theme
-const isDark = useDark({ storageKey: 'tabs-theme' })
-const toggleTheme = useToggle(isDark)
+// theme: light | dark | system
+type ThemeMode = 'light' | 'dark' | 'system'
+const themeMode = ref<ThemeMode>((localStorage.getItem('tabs-theme-mode') as ThemeMode) || 'system')
+const systemDark = usePreferredDark()
+const isDark = useDark({
+  storageKey: 'tabs-theme',
+  valueDark: 'dark',
+  valueLight: 'light',
+})
+watch(themeMode, (m) => {
+  localStorage.setItem('tabs-theme-mode', m)
+  if (m === 'system') isDark.value = systemDark.value
+  else isDark.value = m === 'dark'
+}, { immediate: true })
+watch(systemDark, (v) => {
+  if (themeMode.value === 'system') isDark.value = v
+})
+function cycleTheme() {
+  themeMode.value = themeMode.value === 'light' ? 'dark' : themeMode.value === 'dark' ? 'system' : 'light'
+}
+const themeLabel = computed(() => themeMode.value === 'light' ? '浅色' : themeMode.value === 'dark' ? '深色' : '跟随系统')
 
 // mobile sidebar
 const sidebarOpen = ref(false)
@@ -452,9 +470,10 @@ const dragList = computed({
             <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden md:block w-48" />
           </div>
 
-          <Button variant="ghost" size="icon-sm" @click="toggleTheme()" :title="isDark ? '切换为浅色' : '切换为深色'">
-            <Sun v-if="isDark" class="w-4 h-4" />
-            <Moon v-else class="w-4 h-4" />
+          <Button variant="ghost" size="icon-sm" @click="cycleTheme()" :title="`主题：${themeLabel}（点击切换）`">
+            <Sun v-if="themeMode === 'light'" class="w-4 h-4" />
+            <Moon v-else-if="themeMode === 'dark'" class="w-4 h-4" />
+            <Monitor v-else class="w-4 h-4" />
           </Button>
 
           <!-- user dropdown: hover on PC, click on mobile -->
@@ -575,9 +594,10 @@ const dragList = computed({
           @end="onDragEnd"
         >
           <div
-            v-for="bm in store.visibleBookmarks"
+            v-for="(bm, idx) in store.visibleBookmarks"
             :key="bm.id"
-            class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2"
+            class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2 bookmark-card"
+            :style="{ animationDelay: `${idx * 30}ms` }"
             @dragstart="onCardDragStart($event, bm)"
           >
             <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none shrink-0 p-1 -m-1" style="touch-action: none" title="拖拽排序"><GripVertical class="w-4 h-4" /></span>
@@ -712,5 +732,12 @@ const dragList = computed({
   outline: 3px solid hsl(var(--primary));
   outline-offset: -3px;
   font-weight: 600;
+}
+.bookmark-card {
+  animation: card-in 0.25s ease both;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
