@@ -53,25 +53,34 @@ async function cycleTheme(e: MouseEvent) {
   const next = themeMode.value === 'light' ? 'dark' : themeMode.value === 'dark' ? 'system' : 'light'
   const root = document.documentElement
   const darkTarget = next === 'dark' || (next === 'system' && systemDark.value)
-  if (document.startViewTransition) {
-    const x = e.clientX || window.innerWidth - 40
-    const y = e.clientY || 40
-    const transition = document.startViewTransition(() => {
-      root.classList.toggle('dark', darkTarget)
-    })
-    await transition.ready
-    const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
-    await document.documentElement.animate(
-      { clipPath: [`circle(0px at ${x}px ${y})`, `circle(${r}px at ${x}px ${y})`] },
-      { duration: 500, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' }
-    ).finished
-    // update state after transition
-    themeMode.value = next
-    localStorage.setItem('tabs-theme-mode', next)
-  } else {
-    themeMode.value = next
-    root.classList.toggle('dark', darkTarget)
-  }
+  const x = e.clientX || window.innerWidth - 40
+  const y = e.clientY || 40
+  const maxR = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+  const isCurrentlyDark = root.classList.contains('dark')
+  const oldColor = isCurrentlyDark ? '#18181b' : '#ffffff'
+
+  // 先切换到新主题（用户看不到，因为被覆盖层盖住）
+  root.classList.toggle('dark', darkTarget)
+  themeMode.value = next
+  localStorage.setItem('tabs-theme-mode', next)
+
+  // 用旧主题色覆盖整个屏幕（从点击位置开始的大圆），然后收缩露出新主题
+  const overlay = document.createElement('div')
+  overlay.style.cssText = `
+    position: fixed; top: ${y}px; left: ${x}px;
+    width: ${maxR * 2}px; height: ${maxR * 2}px; border-radius: 50%;
+    background: ${oldColor};
+    z-index: 9999; pointer-events: none;
+    transform: translate(-50%, -50%);
+  `
+  document.body.appendChild(overlay)
+
+  await overlay.animate(
+    { width: [`${maxR * 2}px`, '0px'], height: [`${maxR * 2}px`, '0px'] },
+    { duration: 500, easing: 'ease-out', fill: 'forwards' }
+  ).finished
+
+  overlay.remove()
 }
 const themeLabel = computed(() => themeMode.value === 'light' ? '浅色' : themeMode.value === 'dark' ? '深色' : '跟随系统')
 
