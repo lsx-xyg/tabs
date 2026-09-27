@@ -17,4 +17,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: false,
   },
+  server: {
+    // 本地开发：/api 代理到 dev-api（Better Auth），与生产同源行为一致
+    proxy: {
+      '/api': 'http://localhost:8787',
+    },
+  },
 })
