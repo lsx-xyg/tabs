@@ -147,7 +147,8 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
         const def = categories.value.find((c) => c.isDefault) ?? categories.value[0]
         activeCategoryId.value = def?.id ?? null
       }
-    } catch {
+    } catch (e) {
+      console.error('[loadAll] failed:', e)
       // offline load fallback: use whatever we have in memory
     } finally {
       loading.value = false
