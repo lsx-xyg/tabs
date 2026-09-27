@@ -69,12 +69,15 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
 
   const visibleBookmarks = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
-    let list = bookmarks.value
-    if (activeCategoryId.value) list = list.filter((b) => b.categoryId === activeCategoryId.value)
-    if (q) list = bookmarks.value.filter(
-      (b) => b.name.toLowerCase().includes(q) || b.url.toLowerCase().includes(q),
-    )
-    return [...list].sort((a, b) => a.sortOrder - b.sortOrder)
+    if (q) {
+      return bookmarks.value
+        .filter((b) => b.name.toLowerCase().includes(q) || b.url.toLowerCase().includes(q))
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+    }
+    if (activeCategoryId.value) {
+      return bookmarks.value.filter((b) => b.categoryId === activeCategoryId.value)
+    }
+    return bookmarks.value
   })
 
   const queueCount = computed(() => queue.value.length)
