@@ -554,14 +554,14 @@ const dragList = computed({
 
           <!-- search: always visible input on desktop, icon-expand on mobile -->
           <div class="flex items-center">
-            <div v-if="searchExpanded" class="flex items-center gap-1 md:hidden">
+            <div v-if="searchExpanded" class="flex items-center gap-1 lg:hidden">
               <Input v-model="store.searchQuery" placeholder="搜索书签…" class="w-32 sm:w-40" autofocus />
               <Button variant="ghost" size="icon-sm" @click="searchExpanded = false"><X class="w-4 h-4" /></Button>
             </div>
-            <Button v-else variant="ghost" size="icon-sm" class="md:hidden" @click="searchExpanded = true">
+            <Button v-else variant="ghost" size="icon-sm" class="lg:hidden" @click="searchExpanded = true">
               <Search class="w-4 h-4" />
             </Button>
-            <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden md:block w-48" />
+            <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden lg:block w-48" />
           </div>
 
           <Button variant="ghost" size="icon-sm" @click="cycleTheme($event)" :title="`主题：${themeLabel}（点击切换）`">
@@ -660,17 +660,17 @@ const dragList = computed({
                 @drop="onCategoryDrop($event, c.id)"
               >{{ c.name }}</button>
               <button
-                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
                 title="新建子分类"
                 @click="openAddChildCategory(c)"
               ><Plus class="w-3 h-3" /></button>
               <button
-                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
                 title="重命名"
                 @click="openRenameCategory(c)"
               ><Pencil class="w-3 h-3" /></button>
               <button
-                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
                 title="删除分类"
                 @click="removeCategory(c.id, c.name)"
               ><Trash2 class="w-3 h-3" /></button>
@@ -685,12 +685,12 @@ const dragList = computed({
                 @drop="onCategoryDrop($event, child.id)"
               >{{ child.name }}</button>
               <button
-                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
                 title="重命名"
                 @click="openRenameCategory(child)"
               ><Pencil class="w-3 h-3" /></button>
               <button
-                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
                 title="删除分类"
                 @click="removeCategory(child.id, child.name)"
               ><Trash2 class="w-3 h-3" /></button>
@@ -718,7 +718,7 @@ const dragList = computed({
           :delay="150"
           :delay-on-touch-only="true"
           ghost-class="opacity-40"
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
           @end="onDragEnd"
         >
           <div
@@ -754,7 +754,7 @@ const dragList = computed({
                 <div class="text-xs text-muted-foreground truncate">{{ bm.url }}</div>
               </div>
             </a>
-            <div class="absolute top-1 right-1 flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100">
+            <div class="absolute top-1 right-1 flex gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
               <button class="text-xs text-muted-foreground hover:text-foreground p-0.5" title="编辑" @click.stop="openEditBookmark(bm)"><Pencil class="w-3.5 h-3.5" /></button>
               <button class="text-xs text-muted-foreground hover:text-destructive p-0.5" title="删除" @click.stop="removeBookmark(bm)"><Trash2 class="w-3.5 h-3.5" /></button>
             </div>
