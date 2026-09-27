@@ -537,21 +537,21 @@ const dragList = computed({
               class="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg py-1 z-50"
               @click.stop
             >
-              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks; userMenuOpen = false">
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks(); userMenuOpen = false">
                 <Download class="w-4 h-4" /> 导出书签
               </button>
               <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="importInput?.click(); userMenuOpen = false">
                 <Upload class="w-4 h-4" /> 导入书签
               </button>
-              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="checkAllLinks; userMenuOpen = false">
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="checkAllLinks(); userMenuOpen = false">
                 <Search class="w-4 h-4" /> 检测链接
               </button>
               <div class="border-t my-1"></div>
               <template v-if="isSignedIn">
-                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="handleSignOut; userMenuOpen = false">
+                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="handleSignOut(); userMenuOpen = false">
                   <LogOut class="w-4 h-4" /> 退出登录
                 </button>
-                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" @click="handleDeleteAccount; userMenuOpen = false">
+                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" @click="handleDeleteAccount(); userMenuOpen = false">
                   <Trash class="w-4 h-4" /> 删除账号
                 </button>
               </template>
