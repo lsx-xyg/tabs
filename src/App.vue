@@ -412,7 +412,7 @@ async function onImportFile(e: Event) {
     added++
   }
   ;(e.target as HTMLInputElement).value = ''
-  console.log(`导入完成：新增 ${added} 条，跳过重复 ${skipped} 条`)
+  toast(`导入完成：新增 ${added} 条，跳过重复 ${skipped} 条`, added ? 'success' : 'warn')
 }
 
 function normalizeUrl(url: string): string {

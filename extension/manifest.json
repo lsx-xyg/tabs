@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Tabs 书签收藏",
+  "version": "1.0.0",
+  "description": "一键收藏当前页面到 Tabs 书签导航",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://tabs.dbthree.dpdns.org/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.svg",
+      "48": "icon.svg",
+      "128": "icon.svg"
+    }
+  },
+  "icons": {
+    "16": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
+  }
+}
