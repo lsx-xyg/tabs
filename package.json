@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "npm run migrate-on-build && vue-tsc -b && vite build",
+    "migrate-on-build": "node scripts/migrate-on-build.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

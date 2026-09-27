@@ -27,6 +27,13 @@
 
 前端**不直接持有数据库连接串**：所有数据读写经 Serverless Function 中转，由 `src/server/env.ts` 统一按全大写读取（小写写入自动兜底）。
 
+## 部署（Vercel）
+
+`npm run build` 已内置自动迁移：构建时若检测到 `DATABASE_URL_UNPOOLED`（Vercel 环境注入），会先执行 `drizzle-kit migrate` 再构建前端产物，**首次部署即自动建表，无需手动跑迁移**；本地未配置该变量时自动跳过，不影响日常 `npm run build`。
+
+- 需在 Vercel 环境变量中确认 `DATABASE_URL_UNPOOLED` 的作用域包含 Production。
+- `BETTER_AUTH_SECRET` 与 `BETTER_AUTH_URL` 需手动配置（见上表）。
+
 ## 快速开始
 
 ```bash
