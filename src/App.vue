@@ -247,11 +247,25 @@ function openEditBookmark(bm: Bookmark) {
   bmDialogOpen.value = true
 }
 
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    return `${u.protocol}//${u.host}${u.pathname}`.replace(/\/$/, '')
+  } catch { return url }
+}
+
 async function submitBookmark() {
   bmError.value = ''
   if (!bmName.value.trim() || !bmUrl.value.trim()) {
     bmError.value = '请填写名称和 URL'
     return
+  }
+  let url = bmUrl.value.trim()
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`
+  // duplicate check
+  const dup = store.bookmarks.find((b) => normalizeUrl(b.url) === normalizeUrl(url))
+  if (dup && !editingBm.value) {
+    if (!confirm(`「${dup.name}」已存在相同 URL，仍要添加吗？`)) return
   }
   bmSaving.value = true
   try {
