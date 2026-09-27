@@ -504,9 +504,10 @@ const dragList = computed({
           v-model="dragList"
           :animation="200"
           :handle="'.drag-handle'"
+          :delay="150"
+          :delay-on-touch-only="true"
           ghost-class="opacity-40"
           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
-          style="touch-action: none"
           @end="onDragEnd"
         >
           <div
