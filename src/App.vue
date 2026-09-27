@@ -358,7 +358,10 @@ function openLink(url: string) {
 
 function onDragEnd() {
   const ids = dragList.value.map((b) => b.id)
-  if (ids.length) void store.reorderBookmarks(ids)
+  if (ids.length) {
+    void store.reorderBookmarks(ids)
+    toast(store.offline ? '排序已保存到本地，联网后同步' : '排序已更新', store.offline ? 'warn' : 'success')
+  }
 }
 
 function onCardDragStart(e: DragEvent, bm: Bookmark) {
@@ -374,7 +377,8 @@ async function onCategoryDrop(e: DragEvent, categoryId: string | null) {
   const bm = store.bookmarks.find((b) => b.id === bmId)
   if (!bm || bm.categoryId === categoryId) return
   await store.updateBookmark(bmId, { categoryId } as Partial<Bookmark>)
-  toast(`已移动到「${categoryId ? store.categories.find((c) => c.id === categoryId)?.name ?? '分类' : '默认分类'}」`, 'success')
+  const name = categoryId ? store.categories.find((c) => c.id === categoryId)?.name ?? '分类' : '默认分类'
+  toast(store.offline ? `已移动到「${name}」，本地保存待同步` : `已移动到「${name}」`, store.offline ? 'warn' : 'success')
 }
 
 function onDragOver(e: DragEvent) {
@@ -668,8 +672,8 @@ const dragList = computed({
     />
   </div>
 
-  <!-- toasts: top-center -->
-  <div class="fixed top-16 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center">
+  <!-- toasts: top-center below header -->
+  <div class="fixed top-[60px] left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
     <div
       v-for="t in toasts"
       :key="t.id"

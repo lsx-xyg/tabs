@@ -122,10 +122,8 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
       }
     }
     if (failed.length) queue.value = [...failed, ...queue.value]
-    // after flush, reload to get canonical IDs
-    if (pending.length && !failed.length) {
-      await loadAll()
-    }
+    // after flush, reload to get canonical state
+    if (pending.length) await loadAll()
   }
 
   async function loadAll() {
@@ -227,6 +225,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     try {
       await api(`/api/bookmarks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
     } catch {
+      offline.value = true
       enqueue({ method: 'PATCH', path: `/api/bookmarks/${id}`, body: patch })
     }
   }
@@ -237,6 +236,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     try {
       await api(`/api/bookmarks/${id}`, { method: 'DELETE' })
     } catch {
+      offline.value = true
       enqueue({ method: 'DELETE', path: `/api/bookmarks/${id}`, body: null })
     }
   }
@@ -251,6 +251,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     try {
       await api('/api/bookmarks/reorder', { method: 'POST', body: JSON.stringify({ ids }) })
     } catch {
+      offline.value = true
       enqueue({ method: 'POST', path: '/api/bookmarks/reorder', body: { ids } })
     }
   }
