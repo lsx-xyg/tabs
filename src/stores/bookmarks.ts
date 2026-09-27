@@ -93,7 +93,33 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
   // persist queue
   watch(queue, (q) => saveLS(LS_QUEUE, q), { deep: true })
 
-  // online/offline listeners
+  // online/offline listeners + polling retry
+  let pollTimer: ReturnType<typeof setInterval> | null = null
+
+  function startPolling() {
+    if (pollTimer) return
+    pollTimer = setInterval(async () => {
+      if (!queue.value.length || localMode.value) {
+        stopPolling()
+        return
+      }
+      // Try to flush — if it succeeds, offline clears
+      const hadFailed = await flushQueue(false)
+      if (!hadFailed) {
+        offline.value = false
+        await loadAll()
+        stopPolling()
+      }
+    }, 5000)
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+  }
+
   if (typeof window !== 'undefined') {
     window.addEventListener('online', () => {
       offline.value = false
@@ -102,14 +128,18 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     window.addEventListener('offline', () => {
       offline.value = true
     })
+    // Start polling if there's a persisted queue on load
+    if (queue.value.length) startPolling()
   }
 
   function enqueue(op: Omit<QueuedOp, 'localId'>) {
     queue.value.push({ ...op, localId: uuid() })
+    offline.value = true
+    startPolling()
   }
 
-  async function flushQueue(reload = true) {
-    if (!queue.value.length || localMode.value) return
+  async function flushQueue(reload = true): Promise<boolean> {
+    if (!queue.value.length || localMode.value) return false
     const pending = [...queue.value]
     queue.value = []
     const failed: QueuedOp[] = []
@@ -122,6 +152,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     }
     if (failed.length) queue.value = [...failed, ...queue.value]
     if (pending.length && reload) await loadAll()
+    return failed.length > 0
   }
 
   async function loadAll() {
