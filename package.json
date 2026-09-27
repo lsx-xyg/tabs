@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "dev:api": "tsx server/dev-api.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@lucide/vue": "^1.48.0",
@@ -33,6 +34,7 @@
     "vue-draggable-plus": "^0.6.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^24.19.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "^2.5.1",
