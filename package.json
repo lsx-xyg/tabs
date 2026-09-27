@@ -23,6 +23,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.3",
     "lucide-vue-next": "^0.577.0",
+    "lxgw-wenkai-screen-webfont": "^1.7.0",
     "pinia": "^4.0.3",
     "postgres": "^3.4.9",
     "reka-ui": "^2.10.5",
