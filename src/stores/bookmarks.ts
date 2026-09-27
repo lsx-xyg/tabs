@@ -156,6 +156,11 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     void loadAll()
   }
 
+  function exitLocalMode() {
+    localMode.value = false
+    void loadAll()
+  }
+
   async function addCategory(name: string) {
     const now = new Date().toISOString()
     const c: Category = {
@@ -254,7 +259,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     categories, bookmarks, activeCategoryId, activeCategory,
     loading, searchQuery, localMode, offline, queueCount,
     visibleBookmarks,
-    loadAll, enterLocalMode,
+    loadAll, enterLocalMode, exitLocalMode,
     addCategory, deleteCategory, addBookmark, updateBookmark,
     deleteBookmark, reorderBookmarks, selectCategory,
   }

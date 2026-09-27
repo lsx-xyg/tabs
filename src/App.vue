@@ -86,7 +86,7 @@ onMounted(() => {
   else store.enterLocalMode()
 })
 watch(isSignedIn, (v) => {
-  if (v) void store.loadAll()
+  if (v) store.exitLocalMode()
   else store.enterLocalMode()
 })
 
