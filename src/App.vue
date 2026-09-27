@@ -137,6 +137,18 @@ async function handleSignOut() {
   void sessionState.value.refetch()
 }
 
+function handleDeleteAccount() {
+  askConfirm({
+    title: '删除账号',
+    description: '将永久删除你的账号和所有书签数据，此操作不可撤销。确定继续？',
+    confirmText: '永久删除',
+    onConfirm: async () => {
+      await authClient.deleteUser()
+      void sessionState.value.refetch()
+    },
+  })
+}
+
 function openAddBookmark() {
   editingBm.value = null
   bmName.value = ''
@@ -365,6 +377,7 @@ const dragList = computed({
             <input ref="importInput" type="file" accept=".html" class="hidden" @change="onImportFile" />
             <span class="text-muted-foreground hidden sm:inline">{{ userEmail }}</span>
             <Button variant="outline" size="sm" @click="handleSignOut">退出</Button>
+            <Button variant="ghost" size="sm" class="text-destructive" title="删除账号" @click="handleDeleteAccount">删除账号</Button>
           </template>
         </div>
       </div>

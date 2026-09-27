@@ -17,4 +17,9 @@ export const auth = betterAuth({
   },
   secret: getAuthSecret(),
   baseURL: readEnv('BETTER_AUTH_URL'),
+  user: {
+    deleteUser: {
+      enabled: true,
+    },
+  },
 })
