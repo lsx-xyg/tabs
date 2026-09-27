@@ -86,8 +86,8 @@ const themeLabel = computed(() => themeMode.value === 'light' ? '浅色' : theme
 
 // mobile sidebar
 const sidebarOpen = ref(false)
-const mdBreakpoint = ref(window.innerWidth >= 768)
-window.addEventListener('resize', () => { mdBreakpoint.value = window.innerWidth >= 768 })
+const mdBreakpoint = ref(window.innerWidth >= 1024)
+window.addEventListener('resize', () => { mdBreakpoint.value = window.innerWidth >= 1024 })
 const sidebarCollapsed = ref(localStorage.getItem('tabs-sidebar-collapsed') === '1')
 function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value
@@ -623,21 +623,21 @@ const dragList = computed({
 
     <main v-else class="mx-auto flex max-w-7xl gap-6 px-4 py-6">
       <!-- mobile drawer overlay -->
-      <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/40 md:hidden" @click="sidebarOpen = false"></div>
+      <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/40 lg:hidden" @click="sidebarOpen = false"></div>
 
-      <!-- sidebar: desktop collapsible, mobile drawer -->
+      <!-- sidebar: desktop collapsible, tablet/mobile drawer -->
       <aside
-        class="fixed md:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-all duration-300 ease-in-out md:translate-x-0 md:border-0 md:p-0 md:bg-transparent md:shrink-0"
+        class="fixed lg:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-all duration-300 ease-in-out lg:translate-x-0 lg:border-0 lg:p-0 lg:bg-transparent lg:shrink-0"
         :class="[
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          sidebarCollapsed ? 'md:w-0 md:overflow-hidden md:border-r-0' : 'md:w-56',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          sidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:w-56',
         ]"
       >
         <div class="flex items-center justify-between mb-2 min-w-56">
           <h3 class="text-sm font-medium text-muted-foreground">分类</h3>
           <div class="flex gap-1">
             <Button variant="ghost" size="icon-sm" @click="catOpen = true"><Plus class="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = false"><X class="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon-sm" class="lg:hidden" @click="sidebarOpen = false"><X class="w-4 h-4" /></Button>
           </div>
         </div>
         <nav class="space-y-1 min-w-56">
