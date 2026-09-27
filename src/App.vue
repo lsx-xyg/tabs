@@ -247,13 +247,6 @@ function openEditBookmark(bm: Bookmark) {
   bmDialogOpen.value = true
 }
 
-function normalizeUrl(url: string): string {
-  try {
-    const u = new URL(url)
-    return `${u.protocol}//${u.host}${u.pathname}`.replace(/\/$/, '')
-  } catch { return url }
-}
-
 async function submitBookmark() {
   bmError.value = ''
   if (!bmName.value.trim() || !bmUrl.value.trim()) {
