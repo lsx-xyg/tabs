@@ -1,4 +1,4 @@
-import { auth } from '../../src/server/auth.ts'
+import { auth } from '../../src/server/auth'
 
 /**
  * Vercel Serverless Function：Better Auth 路由入口（/api/auth/*）。
