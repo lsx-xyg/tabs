@@ -627,10 +627,10 @@ const dragList = computed({
 
       <!-- sidebar: desktop collapsible, mobile drawer -->
       <aside
-        class="fixed md:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-all duration-200 md:translate-x-0 md:border-0 md:p-0 md:bg-transparent md:shrink-0"
+        class="fixed md:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-all duration-300 ease-in-out md:translate-x-0 md:border-0 md:p-0 md:bg-transparent md:shrink-0"
         :class="[
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          sidebarCollapsed ? 'md:w-0 md:overflow-hidden md:p-0 md:border-r-0' : 'md:w-56',
+          sidebarCollapsed ? 'md:w-0 md:overflow-hidden md:border-r-0' : 'md:w-56',
         ]"
       >
         <div class="flex items-center justify-between mb-2">
