@@ -69,6 +69,23 @@ function toast(msg: string, type: 'info' | 'success' | 'warn' = 'info') {
   setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id) }, 2500)
 }
 
+const deadIds = ref<Set<string>>(new Set())
+async function checkAllLinks() {
+  toast('正在检测链接…', 'info')
+  try {
+    const r = await fetch('/api/bookmarks/check', { method: 'POST', credentials: 'include' })
+    const data = await r.json()
+    const dead = new Set<string>()
+    for (const [id, info] of Object.entries(data.results ?? {})) {
+      if (!(info as any).ok) dead.add(id)
+    }
+    deadIds.value = dead
+    toast(dead.size ? `${dead.size} 个链接失效` : '所有链接正常', dead.size ? 'warn' : 'success')
+  } catch {
+    toast('检测失败', 'warn')
+  }
+}
+
 const mode = ref<'login' | 'signup'>('login')
 const authDialogOpen = ref(false)
 const email = ref('')
@@ -510,6 +527,9 @@ const dragList = computed({
               <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="importInput?.click(); userMenuOpen = false">
                 <Upload class="w-4 h-4" /> 导入书签
               </button>
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="checkAllLinks; userMenuOpen = false">
+                <Search class="w-4 h-4" /> 检测链接
+              </button>
               <div class="border-t my-1"></div>
               <template v-if="isSignedIn">
                 <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="handleSignOut; userMenuOpen = false">
@@ -633,6 +653,7 @@ const dragList = computed({
             v-for="(bm, idx) in store.visibleBookmarks"
             :key="bm.id"
             class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2 bookmark-card"
+            :class="{ 'border-red-500/50 bg-red-500/5': deadIds.has(bm.id) }"
             :style="{ animationDelay: `${idx * 30}ms` }"
             @dragstart="onCardDragStart($event, bm)"
           >
