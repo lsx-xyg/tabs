@@ -30,6 +30,7 @@ const toggleTheme = useToggle(isDark)
 const sidebarOpen = ref(false)
 
 const mode = ref<'login' | 'signup'>('login')
+const authDialogOpen = ref(false)
 const email = ref('')
 const password = ref('')
 const name = ref('')
@@ -82,9 +83,11 @@ function askConfirm(opts: {
 
 onMounted(() => {
   if (isSignedIn.value) void store.loadAll()
+  else store.enterLocalMode()
 })
 watch(isSignedIn, (v) => {
   if (v) void store.loadAll()
+  else store.enterLocalMode()
 })
 
 function faviconUrl(url: string): string {
@@ -127,6 +130,7 @@ async function handleAuthSubmit() {
     email.value = ''
     password.value = ''
     name.value = ''
+    authDialogOpen.value = false
   } finally {
     submitting.value = false
   }
@@ -370,15 +374,16 @@ const dragList = computed({
           <Button variant="ghost" size="icon-sm" @click="toggleTheme()" :title="isDark ? '切换为浅色' : '切换为深色'">
             {{ isDark ? '☀' : '☾' }}
           </Button>
+          <Input v-model="store.searchQuery" placeholder="搜索…" class="w-32 sm:w-48" />
+          <Button variant="ghost" size="sm" title="导出书签" @click="exportBookmarks">导出</Button>
+          <Button variant="ghost" size="sm" title="从 HTML 导入" @click="importInput?.click()">导入</Button>
+          <input ref="importInput" type="file" accept=".html" class="hidden" @change="onImportFile" />
           <template v-if="isSignedIn">
-            <Input v-model="store.searchQuery" placeholder="搜索…" class="w-32 sm:w-48" />
-            <Button variant="ghost" size="sm" title="导出书签" @click="exportBookmarks">导出</Button>
-            <Button variant="ghost" size="sm" title="从 HTML 导入" @click="importInput?.click()">导入</Button>
-            <input ref="importInput" type="file" accept=".html" class="hidden" @change="onImportFile" />
             <span class="text-muted-foreground hidden sm:inline">{{ userEmail }}</span>
             <Button variant="outline" size="sm" @click="handleSignOut">退出</Button>
             <Button variant="ghost" size="sm" class="text-destructive" title="删除账号" @click="handleDeleteAccount">删除账号</Button>
           </template>
+          <Button v-else variant="outline" size="sm" @click="authDialogOpen = true">登录同步</Button>
         </div>
       </div>
     </header>
@@ -386,26 +391,6 @@ const dragList = computed({
     <div v-if="sessionState.isPending" class="min-h-screen flex items-center justify-center">
       <div class="text-sm text-muted-foreground">加载中…</div>
     </div>
-
-    <main v-else-if="!isSignedIn" class="mx-auto max-w-md px-4 py-16">
-      <div class="rounded-xl border bg-card p-6 shadow-sm">
-        <h2 class="text-xl font-semibold mb-1">{{ mode === 'login' ? '登录' : '注册' }}</h2>
-        <p class="text-sm text-muted-foreground mb-4">登录后书签跨设备同步</p>
-        <form class="grid gap-3" @submit.prevent="handleAuthSubmit">
-          <div class="flex gap-2">
-            <Button :variant="mode === 'login' ? 'default' : 'outline'" size="sm" @click="switchMode('login')">登录</Button>
-            <Button :variant="mode === 'signup' ? 'default' : 'outline'" size="sm" @click="switchMode('signup')">注册</Button>
-          </div>
-          <Input v-if="mode === 'signup'" v-model="name" placeholder="昵称（可选）" />
-          <Input v-model="email" type="email" placeholder="邮箱" autocomplete="email" />
-          <Input v-model="password" type="password" placeholder="密码" />
-          <p v-if="authMessage" class="text-sm text-destructive">{{ authMessage }}</p>
-          <Button type="submit" :disabled="submitting">
-            {{ submitting ? '提交中…' : mode === 'login' ? '登录' : '注册' }}
-          </Button>
-        </form>
-      </div>
-    </main>
 
     <main v-else class="mx-auto flex max-w-7xl gap-6 px-4 py-6">
       <!-- mobile drawer overlay -->
@@ -546,6 +531,25 @@ const dragList = computed({
           <Button variant="outline" @click="renameOpen = false">取消</Button>
           <Button @click="submitRename">保存</Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="authDialogOpen">
+      <DialogContent>
+        <DialogHeader><DialogTitle>{{ mode === 'login' ? '登录同步' : '注册账号' }}</DialogTitle></DialogHeader>
+        <form class="grid gap-3 py-2" @submit.prevent="handleAuthSubmit">
+          <div class="flex gap-2">
+            <Button :variant="mode === 'login' ? 'default' : 'outline'" size="sm" type="button" @click="switchMode('login')">登录</Button>
+            <Button :variant="mode === 'signup' ? 'default' : 'outline'" size="sm" type="button" @click="switchMode('signup')">注册</Button>
+          </div>
+          <Input v-if="mode === 'signup'" v-model="name" placeholder="昵称（可选）" />
+          <Input v-model="email" type="email" placeholder="邮箱" autocomplete="email" />
+          <Input v-model="password" type="password" placeholder="密码" />
+          <p v-if="authMessage" class="text-sm text-destructive">{{ authMessage }}</p>
+          <Button type="submit" :disabled="submitting">
+            {{ submitting ? '提交中…' : mode === 'login' ? '登录' : '注册' }}
+          </Button>
+        </form>
       </DialogContent>
     </Dialog>
 
