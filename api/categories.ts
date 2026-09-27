@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
       .where(eq(categories.userId, ctx.userId))
     const row = await db
       .insert(categories)
-      .values({ userId: ctx.userId, name, sortOrder: count.length, isDefault: count.length === 0 })
+      .values({ userId: ctx.userId, name, parentId: body?.parentId || null, sortOrder: count.length, isDefault: count.length === 0 })
       .returning()
     return res.status(201).json(row[0])
   }

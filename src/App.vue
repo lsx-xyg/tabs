@@ -23,6 +23,15 @@ const store = useBookmarkStore()
 const isSignedIn = computed(() => !!sessionState.value?.data)
 const userEmail = computed(() => sessionState.value?.data?.user?.email ?? '')
 
+const rootCategories = computed(() => store.categories.filter((c) => !c.parentId))
+function childCategories(parentId: string) {
+  return store.categories.filter((c) => c.parentId === parentId)
+}
+function openAddChildCategory(parent: Category) {
+  const name = prompt(`在「${parent.name}」下新建子分类`)
+  if (name?.trim()) void store.addCategory(name.trim(), parent.id)
+}
+
 // theme: light | dark | system
 type ThemeMode = 'light' | 'dark' | 'system'
 const themeMode = ref<ThemeMode>((localStorage.getItem('tabs-theme-mode') as ThemeMode) || 'system')
@@ -548,26 +557,53 @@ const dragList = computed({
             @dragleave="onDragLeave"
             @drop="onCategoryDrop($event, null)"
           >默认分类</button>
-          <div v-for="c in store.categories" :key="c.id" class="group flex items-center gap-1">
-            <button
-              class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate drop-target"
-              :class="store.activeCategoryId === c.id ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
-              @click="store.selectCategory(c.id); sidebarOpen = false"
-              @dragover="onDragOver"
-              @dragleave="onDragLeave"
-              @drop="onCategoryDrop($event, c.id)"
-            >{{ c.name }}</button>
-            <button
-              class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
-              title="重命名"
-              @click="openRenameCategory(c)"
-            ><Pencil class="w-3 h-3" /></button>
-            <button
-              class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
-              title="删除分类"
-              @click="removeCategory(c.id, c.name)"
-            ><Trash2 class="w-3 h-3" /></button>
-          </div>
+          <template v-for="c in rootCategories" :key="c.id">
+            <div class="group flex items-center gap-1">
+              <button
+                class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate drop-target"
+                :class="store.activeCategoryId === c.id ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
+                @click="store.selectCategory(c.id); sidebarOpen = false"
+                @dragover="onDragOver"
+                @dragleave="onDragLeave"
+                @drop="onCategoryDrop($event, c.id)"
+              >{{ c.name }}</button>
+              <button
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                title="新建子分类"
+                @click="openAddChildCategory(c)"
+              ><Plus class="w-3 h-3" /></button>
+              <button
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                title="重命名"
+                @click="openRenameCategory(c)"
+              ><Pencil class="w-3 h-3" /></button>
+              <button
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+                title="删除分类"
+                @click="removeCategory(c.id, c.name)"
+              ><Trash2 class="w-3 h-3" /></button>
+            </div>
+            <div v-for="child in childCategories(c.id)" :key="child.id" class="group flex items-center gap-1 pl-5">
+              <button
+                class="flex-1 rounded-md px-3 py-1.5 text-left text-sm transition truncate drop-target"
+                :class="store.activeCategoryId === child.id ? 'bg-accent font-medium' : 'hover:bg-accent/50 text-muted-foreground'"
+                @click="store.selectCategory(child.id); sidebarOpen = false"
+                @dragover="onDragOver"
+                @dragleave="onDragLeave"
+                @drop="onCategoryDrop($event, child.id)"
+              >{{ child.name }}</button>
+              <button
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                title="重命名"
+                @click="openRenameCategory(child)"
+              ><Pencil class="w-3 h-3" /></button>
+              <button
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+                title="删除分类"
+                @click="removeCategory(child.id, child.name)"
+              ><Trash2 class="w-3 h-3" /></button>
+            </div>
+          </template>
         </nav>
       </aside>
 

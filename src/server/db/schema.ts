@@ -76,6 +76,7 @@ export const categories = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    parentId: text('parent_id'),
     sortOrder: integer('sort_order').notNull().default(0),
     isDefault: boolean('is_default').notNull().default(false),
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),

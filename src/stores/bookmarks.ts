@@ -5,6 +5,7 @@ export interface Category {
   id: string
   userId: string
   name: string
+  parentId: string | null
   sortOrder: number
   isDefault: boolean
   createdAt: string
@@ -163,10 +164,10 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     void loadAll()
   }
 
-  async function addCategory(name: string) {
+  async function addCategory(name: string, parentId: string | null = null) {
     const now = new Date().toISOString()
     const c: Category = {
-      id: uuid(), userId: 'local', name,
+      id: uuid(), userId: 'local', name, parentId,
       sortOrder: categories.value.length,
       isDefault: categories.value.length === 0,
       createdAt: now,
@@ -175,11 +176,14 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     categories.value.push(c)
     if (!activeCategoryId.value) activeCategoryId.value = c.id
 
-    if (localMode.value) return
+    if (localMode.value) return 'local' as const
     try {
-      await api('/api/categories', { method: 'POST', body: JSON.stringify({ name }) })
+      await api('/api/categories', { method: 'POST', body: JSON.stringify({ name, parentId }) })
+      return 'online' as const
     } catch {
-      enqueue({ method: 'POST', path: '/api/categories', body: { name } })
+      offline.value = true
+      enqueue({ method: 'POST', path: '/api/categories', body: { name, parentId } })
+      return 'queued' as const
     }
   }
 
