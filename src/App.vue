@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useDark, useToggle } from '@vueuse/core'
 import { VueDraggable } from 'vue-draggable-plus'
 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -13,13 +14,20 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { authClient } from '@/lib/auth-client'
-import { useBookmarkStore, type Bookmark } from '@/stores/bookmarks'
+import { useBookmarkStore, type Bookmark, type Category } from '@/stores/bookmarks'
 
 const sessionState = authClient.useSession()
 const store = useBookmarkStore()
 
 const isSignedIn = computed(() => !!sessionState.value?.data)
 const userEmail = computed(() => sessionState.value?.data?.user?.email ?? '')
+
+// theme
+const isDark = useDark({ storageKey: 'tabs-theme' })
+const toggleTheme = useToggle(isDark)
+
+// mobile sidebar
+const sidebarOpen = ref(false)
 
 const mode = ref<'login' | 'signup'>('login')
 const email = ref('')
@@ -205,6 +213,87 @@ function removeCategory(id: string, label: string) {
   })
 }
 
+// category rename
+const renameOpen = ref(false)
+const renameId = ref('')
+const renameName = ref('')
+async function openRenameCategory(c: Category) {
+  renameId.value = c.id
+  renameName.value = c.name
+  renameOpen.value = true
+}
+async function submitRename() {
+  const n = renameName.value.trim()
+  if (!n) return
+  await fetch(`/api/categories/${renameId.value}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: n }),
+  })
+  const c = store.categories.find((x) => x.id === renameId.value)
+  if (c) c.name = n
+  renameOpen.value = false
+}
+
+// export bookmarks as Netscape Bookmark HTML
+function exportBookmarks() {
+  const cats = store.categories
+  const bms = store.bookmarks
+  let html = `<!DOCTYPE NETSCAPE-BOOKMARK-FILE-1>\n<NETSCAPE-BOOKMARK-FILE-1>\n<DT><H3>Bookmarks</H3>\n<DL><p>\n`
+  const uncategorized = bms.filter((b) => !b.categoryId)
+  for (const c of cats) {
+    const inCat = bms.filter((b) => b.categoryId === c.id).sort((a, b) => a.sortOrder - b.sortOrder)
+    if (!inCat.length) continue
+    html += `  <DT><H3>${escapeHtml(c.name)}</H3>\n  <DL><p>\n`
+    for (const b of inCat) {
+      html += `    <DT><A HREF="${escapeHtml(b.url)}">${escapeHtml(b.name)}</A>\n`
+    }
+    html += `  </DL><p>\n`
+  }
+  for (const b of uncategorized) {
+    html += `  <DT><A HREF="${escapeHtml(b.url)}">${escapeHtml(b.name)}</A>\n`
+  }
+  html += `</DL><p>\n</NETSCAPE-BOOKMARK-FILE-1>\n`
+  const blob = new Blob([html], { type: 'text/html' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `tabs-bookmarks-${new Date().toISOString().slice(0, 10)}.html`
+  a.click()
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+// import bookmarks from HTML file
+const importInput = ref<HTMLInputElement | null>(null)
+async function onImportFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  const text = await file.text()
+  const doc = new DOMParser().parseFromString(text, 'text/html')
+  const links = doc.querySelectorAll('a[href]')
+  for (const a of Array.from(links)) {
+    const url = a.getAttribute('href') ?? ''
+    const name = a.textContent?.trim() || url
+    if (!url || !/^https?:\/\//i.test(url)) continue
+    // find parent category
+    let catId: string | null = null
+    let parent = a.closest('dl')?.previousElementSibling
+    if (parent && parent.tagName === 'H3') {
+      const catName = parent.textContent?.trim()
+      let cat = store.categories.find((c) => c.name === catName)
+      if (!cat) {
+        await store.addCategory(catName || '导入')
+        cat = store.categories[store.categories.length - 1]
+      }
+      catId = cat.id
+    }
+    await store.addBookmark({ name, url, categoryId: catId })
+  }
+  ;(e.target as HTMLInputElement).value = ''
+}
+
 function openLink(url: string) {
   window.open(url, '_blank')
 }
@@ -233,11 +322,20 @@ const dragList = computed({
   <div class="min-h-screen bg-background text-foreground">
     <header class="border-b">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <h1 class="text-lg font-semibold tracking-tight">Tabs</h1>
-        <div class="flex items-center gap-3 text-sm">
+        <div class="flex items-center gap-2">
+          <Button v-if="isSignedIn" variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = true">☰</Button>
+          <h1 class="text-lg font-semibold tracking-tight">Tabs</h1>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <Button variant="ghost" size="icon-sm" @click="toggleTheme()" :title="isDark ? '切换为浅色' : '切换为深色'">
+            {{ isDark ? '☀' : '☾' }}
+          </Button>
           <template v-if="isSignedIn">
-            <Input v-model="store.searchQuery" placeholder="搜索书签…" class="w-48" />
-            <span class="text-muted-foreground">{{ userEmail }}</span>
+            <Input v-model="store.searchQuery" placeholder="搜索…" class="w-32 sm:w-48" />
+            <Button variant="ghost" size="sm" title="导出书签" @click="exportBookmarks">导出</Button>
+            <Button variant="ghost" size="sm" title="从 HTML 导入" @click="importInput?.click()">导入</Button>
+            <input ref="importInput" type="file" accept=".html" class="hidden" @change="onImportFile" />
+            <span class="text-muted-foreground hidden sm:inline">{{ userEmail }}</span>
             <Button variant="outline" size="sm" @click="handleSignOut">退出</Button>
           </template>
         </div>
@@ -269,23 +367,38 @@ const dragList = computed({
     </main>
 
     <main v-else class="mx-auto flex max-w-7xl gap-6 px-4 py-6">
-      <aside class="w-56 shrink-0">
+      <!-- mobile drawer overlay -->
+      <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/40 md:hidden" @click="sidebarOpen = false"></div>
+
+      <!-- sidebar: desktop static, mobile drawer -->
+      <aside
+        class="fixed md:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-transform md:translate-x-0 md:w-56 md:shrink-0 md:border-0 md:p-0 md:bg-transparent"
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+      >
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-medium text-muted-foreground">分类</h3>
-          <Button variant="ghost" size="sm" @click="catOpen = true">+</Button>
+          <div class="flex gap-1">
+            <Button variant="ghost" size="sm" @click="catOpen = true">+</Button>
+            <Button variant="ghost" size="sm" class="md:hidden" @click="sidebarOpen = false">✕</Button>
+          </div>
         </div>
         <nav class="space-y-1">
           <button
             class="w-full rounded-md px-3 py-2 text-left text-sm transition"
             :class="store.activeCategoryId === null ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
-            @click="store.selectCategory(null)"
+            @click="store.selectCategory(null); sidebarOpen = false"
           >全部</button>
           <div v-for="c in store.categories" :key="c.id" class="group flex items-center gap-1">
             <button
               class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate"
               :class="store.activeCategoryId === c.id ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
-              @click="store.selectCategory(c.id)"
+              @click="store.selectCategory(c.id); sidebarOpen = false"
             >{{ c.name }}</button>
+            <button
+              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+              title="重命名"
+              @click="openRenameCategory(c)"
+            >✎</button>
             <button
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
               @click="removeCategory(c.id, c.name)"
@@ -380,6 +493,17 @@ const dragList = computed({
         <DialogFooter>
           <Button variant="outline" @click="catOpen = false">取消</Button>
           <Button @click="submitCategory" :disabled="catSaving">创建</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="renameOpen">
+      <DialogContent>
+        <DialogHeader><DialogTitle>重命名分类</DialogTitle></DialogHeader>
+        <Input v-model="renameName" placeholder="新名称" @keyup.enter="submitRename" />
+        <DialogFooter>
+          <Button variant="outline" @click="renameOpen = false">取消</Button>
+          <Button @click="submitRename">保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
