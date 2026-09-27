@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
 import { VueDraggable } from 'vue-draggable-plus'
+import { Search, Sun, Moon, Menu, Plus, Pencil, Trash2, GripVertical, LogOut, Trash, Upload, Download, X } from 'lucide-vue-next'
 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -369,7 +370,9 @@ const dragList = computed({
     <header class="border-b">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 gap-2">
         <div class="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = true">☰</Button>
+          <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = true">
+            <Menu class="w-4 h-4" />
+          </Button>
           <h1 class="text-lg font-semibold tracking-tight">Tabs</h1>
         </div>
 
@@ -378,21 +381,21 @@ const dragList = computed({
             离线{{ store.queueCount ? `·${store.queueCount}` : '' }}
           </span>
 
-          <!-- search: icon on mobile, input on desktop -->
-          <div class="relative">
-            <Button variant="ghost" size="icon-sm" @click="searchExpanded = !searchExpanded">🔍</Button>
-            <Input
-              v-if="searchExpanded"
-              v-model="store.searchQuery"
-              placeholder="搜索书签…"
-              class="absolute right-0 top-1/2 -translate-y-1/2 w-40 sm:w-56"
-              autofocus
-            />
-            <Input v-else v-model="store.searchQuery" placeholder="搜索…" class="hidden md:block w-48" />
+          <!-- search: always visible input on desktop, icon-expand on mobile -->
+          <div class="flex items-center">
+            <div v-if="searchExpanded" class="flex items-center gap-1 md:hidden">
+              <Input v-model="store.searchQuery" placeholder="搜索书签…" class="w-32 sm:w-40" autofocus />
+              <Button variant="ghost" size="icon-sm" @click="searchExpanded = false"><X class="w-4 h-4" /></Button>
+            </div>
+            <Button v-else variant="ghost" size="icon-sm" class="md:hidden" @click="searchExpanded = true">
+              <Search class="w-4 h-4" />
+            </Button>
+            <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden md:block w-48" />
           </div>
 
           <Button variant="ghost" size="icon-sm" @click="toggleTheme()" :title="isDark ? '切换为浅色' : '切换为深色'">
-            {{ isDark ? '☀' : '☾' }}
+            <Sun v-if="isDark" class="w-4 h-4" />
+            <Moon v-else class="w-4 h-4" />
           </Button>
 
           <!-- user dropdown -->
@@ -404,21 +407,30 @@ const dragList = computed({
               <div class="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
                 {{ (userEmail || '?')[0]?.toUpperCase() }}
               </div>
-              <span class="hidden sm:inline text-xs text-muted-foreground">{{ userEmail }}</span>
             </button>
             <div
               v-if="userMenuOpen"
               class="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg py-1 z-50"
               @click.outside="userMenuOpen = false"
             >
-              <button class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks; userMenuOpen = false">导出书签</button>
-              <button class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="importInput?.click(); userMenuOpen = false">导入书签</button>
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks; userMenuOpen = false">
+                <Download class="w-4 h-4" /> 导出书签
+              </button>
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="importInput?.click(); userMenuOpen = false">
+                <Upload class="w-4 h-4" /> 导入书签
+              </button>
               <div class="border-t my-1"></div>
               <template v-if="isSignedIn">
-                <button class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="handleSignOut; userMenuOpen = false">退出登录</button>
-                <button class="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent" @click="handleDeleteAccount; userMenuOpen = false">删除账号</button>
+                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="handleSignOut; userMenuOpen = false">
+                  <LogOut class="w-4 h-4" /> 退出登录
+                </button>
+                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent" @click="handleDeleteAccount; userMenuOpen = false">
+                  <Trash class="w-4 h-4" /> 删除账号
+                </button>
               </template>
-              <button v-else class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="authDialogOpen = true; userMenuOpen = false">登录同步</button>
+              <button v-else class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="authDialogOpen = true; userMenuOpen = false">
+                登录同步
+              </button>
             </div>
           </div>
         </div>
@@ -441,8 +453,8 @@ const dragList = computed({
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-medium text-muted-foreground">分类</h3>
           <div class="flex gap-1">
-            <Button variant="ghost" size="sm" @click="catOpen = true">+</Button>
-            <Button variant="ghost" size="sm" class="md:hidden" @click="sidebarOpen = false">✕</Button>
+            <Button variant="ghost" size="icon-sm" @click="catOpen = true"><Plus class="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = false"><X class="w-4 h-4" /></Button>
           </div>
         </div>
         <nav class="space-y-1">
@@ -461,11 +473,12 @@ const dragList = computed({
               class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
               title="重命名"
               @click="openRenameCategory(c)"
-            >✎</button>
+            ><Pencil class="w-3 h-3" /></button>
             <button
               class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+              title="删除分类"
               @click="removeCategory(c.id, c.name)"
-            >×</button>
+            ><Trash2 class="w-3 h-3" /></button>
           </div>
         </nav>
       </aside>
@@ -495,7 +508,7 @@ const dragList = computed({
             :key="bm.id"
             class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2"
           >
-            <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none text-sm shrink-0 px-0.5" title="拖拽排序">⋮⋮</span>
+            <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none shrink-0 px-0.5" title="拖拽排序"><GripVertical class="w-4 h-4" /></span>
             <a
               :href="bm.url"
               target="_blank"
@@ -520,8 +533,8 @@ const dragList = computed({
               </div>
             </a>
             <div class="absolute top-1 right-1 flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100">
-              <button class="text-xs text-muted-foreground hover:text-foreground px-1" title="编辑" @click.stop="openEditBookmark(bm)">✎</button>
-              <button class="text-xs text-muted-foreground hover:text-destructive px-1" title="删除" @click.stop="removeBookmark(bm)">×</button>
+              <button class="text-xs text-muted-foreground hover:text-foreground p-0.5" title="编辑" @click.stop="openEditBookmark(bm)"><Pencil class="w-3.5 h-3.5" /></button>
+              <button class="text-xs text-muted-foreground hover:text-destructive p-0.5" title="删除" @click.stop="removeBookmark(bm)"><Trash2 class="w-3.5 h-3.5" /></button>
             </div>
           </div>
         </VueDraggable>
