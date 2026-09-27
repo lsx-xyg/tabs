@@ -86,8 +86,8 @@ const themeLabel = computed(() => themeMode.value === 'light' ? '浅色' : theme
 
 // mobile sidebar
 const sidebarOpen = ref(false)
-const mdBreakpoint = ref(window.innerWidth >= 1024)
-window.addEventListener('resize', () => { mdBreakpoint.value = window.innerWidth >= 1024 })
+const mdBreakpoint = ref(window.innerWidth >= 1280)
+window.addEventListener('resize', () => { mdBreakpoint.value = window.innerWidth >= 1280 })
 const sidebarCollapsed = ref(localStorage.getItem('tabs-sidebar-collapsed') === '1')
 function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value
@@ -554,14 +554,14 @@ const dragList = computed({
 
           <!-- search: always visible input on desktop, icon-expand on mobile -->
           <div class="flex items-center">
-            <div v-if="searchExpanded" class="flex items-center gap-1 lg:hidden">
+            <div v-if="searchExpanded" class="flex items-center gap-1 xl:hidden">
               <Input v-model="store.searchQuery" placeholder="搜索书签…" class="w-32 sm:w-40" autofocus />
               <Button variant="ghost" size="icon-sm" @click="searchExpanded = false"><X class="w-4 h-4" /></Button>
             </div>
-            <Button v-else variant="ghost" size="icon-sm" class="lg:hidden" @click="searchExpanded = true">
+            <Button v-else variant="ghost" size="icon-sm" class="xl:hidden" @click="searchExpanded = true">
               <Search class="w-4 h-4" />
             </Button>
-            <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden lg:block w-48" />
+            <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden xl:block w-48" />
           </div>
 
           <Button variant="ghost" size="icon-sm" @click="cycleTheme($event)" :title="`主题：${themeLabel}（点击切换）`">
@@ -623,21 +623,21 @@ const dragList = computed({
 
     <main v-else class="mx-auto flex max-w-7xl gap-6 px-4 py-6">
       <!-- mobile drawer overlay -->
-      <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/40 lg:hidden" @click="sidebarOpen = false"></div>
+      <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/40 xl:hidden" @click="sidebarOpen = false"></div>
 
       <!-- sidebar: desktop collapsible, tablet/mobile drawer -->
       <aside
-        class="fixed lg:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-all duration-300 ease-in-out lg:translate-x-0 lg:border-0 lg:p-0 lg:bg-transparent lg:shrink-0"
+        class="fixed xl:static z-50 top-0 left-0 h-full w-64 bg-background border-r p-4 transition-all duration-300 ease-in-out xl:translate-x-0 xl:border-0 xl:p-0 xl:bg-transparent xl:shrink-0"
         :class="[
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
-          sidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:w-56',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0',
+          sidebarCollapsed ? 'xl:w-0 xl:overflow-hidden xl:border-r-0' : 'xl:w-56',
         ]"
       >
         <div class="flex items-center justify-between mb-2 min-w-56">
           <h3 class="text-sm font-medium text-muted-foreground">分类</h3>
           <div class="flex gap-1">
             <Button variant="ghost" size="icon-sm" @click="catOpen = true"><Plus class="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon-sm" class="lg:hidden" @click="sidebarOpen = false"><X class="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon-sm" class="xl:hidden" @click="sidebarOpen = false"><X class="w-4 h-4" /></Button>
           </div>
         </div>
         <nav class="space-y-1 min-w-56">
@@ -660,17 +660,17 @@ const dragList = computed({
                 @drop="onCategoryDrop($event, c.id)"
               >{{ c.name }}</button>
               <button
-                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                class="opacity-100 xl:opacity-0 xl:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
                 title="新建子分类"
                 @click="openAddChildCategory(c)"
               ><Plus class="w-3 h-3" /></button>
               <button
-                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                class="opacity-100 xl:opacity-0 xl:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
                 title="重命名"
                 @click="openRenameCategory(c)"
               ><Pencil class="w-3 h-3" /></button>
               <button
-                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+                class="opacity-100 xl:opacity-0 xl:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
                 title="删除分类"
                 @click="removeCategory(c.id, c.name)"
               ><Trash2 class="w-3 h-3" /></button>
@@ -685,12 +685,12 @@ const dragList = computed({
                 @drop="onCategoryDrop($event, child.id)"
               >{{ child.name }}</button>
               <button
-                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+                class="opacity-100 xl:opacity-0 xl:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
                 title="重命名"
                 @click="openRenameCategory(child)"
               ><Pencil class="w-3 h-3" /></button>
               <button
-                class="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+                class="opacity-100 xl:opacity-0 xl:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
                 title="删除分类"
                 @click="removeCategory(child.id, child.name)"
               ><Trash2 class="w-3 h-3" /></button>
@@ -718,7 +718,7 @@ const dragList = computed({
           :delay="150"
           :delay-on-touch-only="true"
           ghost-class="opacity-40"
-          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+          class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3"
           @end="onDragEnd"
         >
           <div
@@ -754,7 +754,7 @@ const dragList = computed({
                 <div class="text-xs text-muted-foreground truncate">{{ bm.url }}</div>
               </div>
             </a>
-            <div class="absolute top-1 right-1 flex gap-0.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+            <div class="absolute top-1 right-1 flex gap-0.5 opacity-100 xl:opacity-0 xl:group-hover:opacity-100">
               <button class="text-xs text-muted-foreground hover:text-foreground p-0.5" title="编辑" @click.stop="openEditBookmark(bm)"><Pencil class="w-3.5 h-3.5" /></button>
               <button class="text-xs text-muted-foreground hover:text-destructive p-0.5" title="删除" @click.stop="removeBookmark(bm)"><Trash2 class="w-3.5 h-3.5" /></button>
             </div>
