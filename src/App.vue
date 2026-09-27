@@ -105,8 +105,8 @@ watch(isSignedIn, (v) => {
 
 function faviconUrl(url: string): string {
   try {
-    const domain = new URL(url).hostname
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+    const u = new URL(url).href
+    return `/api/favicon?url=${encodeURIComponent(u)}`
   } catch {
     return ''
   }
