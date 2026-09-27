@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../src/server/db/db.js'
-import { bookmarks } from '../src/server/db/schema.js'
-import { getRequestUser } from '../src/server/request.js'
+import { db } from '../../src/server/db/db.js'
+import { bookmarks } from '../../src/server/db/schema.js'
+import { getRequestUser } from '../../src/server/request.js'
 
 /**
  * POST /api/bookmarks/check — 批量检测书签 URL 是否可达
