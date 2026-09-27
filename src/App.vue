@@ -53,20 +53,21 @@ async function cycleTheme(e: MouseEvent) {
   const next = themeMode.value === 'light' ? 'dark' : themeMode.value === 'dark' ? 'system' : 'light'
   const root = document.documentElement
   const darkTarget = next === 'dark' || (next === 'system' && systemDark.value)
-  // circular reveal from click point
   if (document.startViewTransition) {
     const x = e.clientX || window.innerWidth - 40
     const y = e.clientY || 40
     const transition = document.startViewTransition(() => {
-      themeMode.value = next
       root.classList.toggle('dark', darkTarget)
     })
     await transition.ready
     const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
-    document.documentElement.animate(
+    await document.documentElement.animate(
       { clipPath: [`circle(0px at ${x}px ${y})`, `circle(${r}px at ${x}px ${y})`] },
       { duration: 500, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' }
-    )
+    ).finished
+    // update state after transition
+    themeMode.value = next
+    localStorage.setItem('tabs-theme-mode', next)
   } else {
     themeMode.value = next
     root.classList.toggle('dark', darkTarget)
