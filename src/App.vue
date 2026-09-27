@@ -592,7 +592,6 @@ const dragList = computed({
               draggable="true"
               class="flex items-center gap-3 flex-1 min-w-0"
               @dragstart="onCardDragStart($event, bm)"
-              @click="openLink(bm.url)"
             >
               <img
                 v-if="bm.iconUrl || faviconUrl(bm.url)"
