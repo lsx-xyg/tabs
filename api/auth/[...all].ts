@@ -1,10 +1,17 @@
-import { toNodeHandler } from 'better-auth/node'
-
-import { auth } from '../../src/server/auth.js'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 /**
- * Vercel Serverless Function：Better Auth 路由入口（/api/auth/*）。
- * 使用 toNodeHandler（req, res）签名，兼容 Vercel Node 运行时；
- * 会话验证直接查库（session 表），与业务数据同源。
+ * 临时探针：验证 catch-all 路由本身是否被 Vercel 识别。
+ * 不引入 better-auth/drizzle 重型依赖。
  */
-export default toNodeHandler(auth)
+export default function handler(req: IncomingMessage, res: ServerResponse) {
+  res.setHeader('content-type', 'application/json')
+  res.end(
+    JSON.stringify({
+      ok: true,
+      route: 'auth-catchall',
+      url: req.url,
+      ts: Date.now(),
+    }),
+  )
+}
