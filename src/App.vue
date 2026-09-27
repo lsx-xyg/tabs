@@ -148,12 +148,11 @@ function askConfirm(opts: {
 }
 
 onMounted(() => {
-  if (isSignedIn.value) void store.loadAll()
-  else store.enterLocalMode()
+  // Try online load first; if 401, fall back to local mode
+  void store.loadAll().catch(() => store.enterLocalMode())
 })
 watch(isSignedIn, (v) => {
   if (v) store.exitLocalMode()
-  else store.enterLocalMode()
 })
 
 function faviconUrl(url: string): string {
