@@ -526,7 +526,7 @@ const dragList = computed({
           >
             <button
               class="flex items-center gap-1.5 rounded-full hover:bg-accent px-2 py-1"
-              @click="userMenuOpen = !userMenuOpen"
+              @click.stop="userMenuOpen = !userMenuOpen"
             >
               <div class="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
                 {{ (userEmail || '?')[0]?.toUpperCase() }}
@@ -535,6 +535,7 @@ const dragList = computed({
             <div
               v-if="userMenuOpen || pcMenuOpen"
               class="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg py-1 z-50"
+              @click.stop
             >
               <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks; userMenuOpen = false">
                 <Download class="w-4 h-4" /> 导出书签
