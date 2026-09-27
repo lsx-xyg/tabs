@@ -543,7 +543,6 @@ const dragList = computed({
             v-for="bm in store.visibleBookmarks"
             :key="bm.id"
             class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2"
-            draggable="true"
             @dragstart="onCardDragStart($event, bm)"
           >
             <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none shrink-0 p-1 -m-1" style="touch-action: none" title="拖拽排序"><GripVertical class="w-4 h-4" /></span>
@@ -551,8 +550,9 @@ const dragList = computed({
               :href="bm.url"
               target="_blank"
               rel="noopener noreferrer"
-              draggable="false"
+              draggable="true"
               class="flex items-center gap-3 flex-1 min-w-0"
+              @dragstart="onCardDragStart($event, bm)"
               @click="openLink(bm.url)"
             >
               <img
