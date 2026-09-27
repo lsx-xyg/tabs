@@ -374,10 +374,6 @@ function normalizeUrl(url: string): string {
   }
 }
 
-function openLink(url: string) {
-  window.open(url, '_blank')
-}
-
 function onDragEnd() {
   const ids = dragList.value.map((b) => b.id)
   if (!ids.length) return
