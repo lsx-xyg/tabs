@@ -351,6 +351,29 @@ function onDragEnd() {
   if (ids.length) void store.reorderBookmarks(ids)
 }
 
+function onCardDragStart(e: DragEvent, bm: Bookmark) {
+  e.dataTransfer?.setData('text/bookmark-id', bm.id)
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+}
+
+async function onCategoryDrop(e: DragEvent, categoryId: string | null) {
+  e.preventDefault()
+  ;(e.currentTarget as HTMLElement).classList.remove('drag-over')
+  const bmId = e.dataTransfer?.getData('text/bookmark-id')
+  if (!bmId) return
+  const bm = store.bookmarks.find((b) => b.id === bmId)
+  if (!bm || bm.categoryId === categoryId) return
+  await store.updateBookmark(bmId, { categoryId } as Partial<Bookmark>)
+}
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  ;(e.currentTarget as HTMLElement).classList.add('drag-over')
+}
+function onDragLeave(e: DragEvent) {
+  ;(e.currentTarget as HTMLElement).classList.remove('drag-over')
+}
+
 // draggable needs a writable v-model; sync with visibleBookmarks
 const dragList = computed({
   get: () => store.visibleBookmarks,
@@ -464,15 +487,21 @@ const dragList = computed({
         </div>
         <nav class="space-y-1">
           <button
-            class="w-full rounded-md px-3 py-2 text-left text-sm transition"
+            class="w-full rounded-md px-3 py-2 text-left text-sm transition drop-target"
             :class="store.activeCategoryId === null ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
             @click="store.selectCategory(null); sidebarOpen = false"
+            @dragover="onDragOver"
+            @dragleave="onDragLeave"
+            @drop="onCategoryDrop($event, null)"
           >全部</button>
           <div v-for="c in store.categories" :key="c.id" class="group flex items-center gap-1">
             <button
-              class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate"
+              class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate drop-target"
               :class="store.activeCategoryId === c.id ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
               @click="store.selectCategory(c.id); sidebarOpen = false"
+              @dragover="onDragOver"
+              @dragleave="onDragLeave"
+              @drop="onCategoryDrop($event, c.id)"
             >{{ c.name }}</button>
             <button
               class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
@@ -514,12 +543,15 @@ const dragList = computed({
             v-for="bm in store.visibleBookmarks"
             :key="bm.id"
             class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2"
+            draggable="true"
+            @dragstart="onCardDragStart($event, bm)"
           >
             <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none shrink-0 p-1 -m-1" style="touch-action: none" title="拖拽排序"><GripVertical class="w-4 h-4" /></span>
             <a
               :href="bm.url"
               target="_blank"
               rel="noopener noreferrer"
+              draggable="false"
               class="flex items-center gap-3 flex-1 min-w-0"
               @click="openLink(bm.url)"
             >
@@ -625,3 +657,10 @@ const dragList = computed({
     />
   </div>
 </template>
+
+<style scoped>
+.drop-target.drag-over {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: -2px;
+}
+</style>
