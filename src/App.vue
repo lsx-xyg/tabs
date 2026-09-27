@@ -273,25 +273,53 @@ async function onImportFile(e: Event) {
   const text = await file.text()
   const doc = new DOMParser().parseFromString(text, 'text/html')
   const links = doc.querySelectorAll('a[href]')
+  // existing URLs for dedup — normalize: lowercase, strip trailing slash
+  const existing = new Set(
+    store.bookmarks.map((b) => normalizeUrl(b.url)),
+  )
+  let added = 0
+  let skipped = 0
   for (const a of Array.from(links)) {
     const url = a.getAttribute('href') ?? ''
     const name = a.textContent?.trim() || url
     if (!url || !/^https?:\/\//i.test(url)) continue
-    // find parent category
+    // dedup by normalized URL
+    const norm = normalizeUrl(url)
+    if (existing.has(norm)) {
+      skipped++
+      continue
+    }
+    existing.add(norm)
+    // find parent category — skip the root <H3>Bookmarks</H3>
     let catId: string | null = null
-    let parent = a.closest('dl')?.previousElementSibling
+    const parent = a.closest('dl')?.previousElementSibling
     if (parent && parent.tagName === 'H3') {
       const catName = parent.textContent?.trim()
-      let cat = store.categories.find((c) => c.name === catName)
-      if (!cat) {
-        await store.addCategory(catName || '导入')
-        cat = store.categories[store.categories.length - 1]
+      // root "Bookmarks" heading = uncategorized
+      if (catName && catName.toLowerCase() !== 'bookmarks') {
+        let cat = store.categories.find((c) => c.name === catName)
+        if (!cat) {
+          await store.addCategory(catName)
+          cat = store.categories[store.categories.length - 1]
+        }
+        catId = cat.id
       }
-      catId = cat.id
     }
     await store.addBookmark({ name, url, categoryId: catId })
+    added++
   }
   ;(e.target as HTMLInputElement).value = ''
+  console.log(`导入完成：新增 ${added} 条，跳过重复 ${skipped} 条`)
+}
+
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    u.hash = ''
+    return (u.origin + u.pathname).replace(/\/$/, '').toLowerCase()
+  } catch {
+    return url.toLowerCase()
+  }
 }
 
 function openLink(url: string) {
