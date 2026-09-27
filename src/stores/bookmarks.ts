@@ -84,12 +84,10 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
 
   const queueCount = computed(() => queue.value.length)
 
-  // persist local mode data
+  // persist to localStorage always (as offline cache)
   watch([categories, bookmarks], () => {
-    if (localMode.value) {
-      saveLS(LS_CATS, categories.value)
-      saveLS(LS_BMS, bookmarks.value)
-    }
+    saveLS(LS_CATS, categories.value)
+    saveLS(LS_BMS, bookmarks.value)
   }, { deep: true })
 
   // persist queue
@@ -110,7 +108,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     queue.value.push({ ...op, localId: uuid() })
   }
 
-  async function flushQueue() {
+  async function flushQueue(reload = true) {
     if (!queue.value.length || localMode.value) return
     const pending = [...queue.value]
     queue.value = []
@@ -123,8 +121,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
       }
     }
     if (failed.length) queue.value = [...failed, ...queue.value]
-    // after flush, reload to get canonical state
-    if (pending.length) await loadAll()
+    if (pending.length && reload) await loadAll()
   }
 
   async function loadAll() {
@@ -134,22 +131,26 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
         categories.value = loadLS<Category>(LS_CATS)
         bookmarks.value = loadLS<Bookmark>(LS_BMS)
       } else {
-        const [cats, bms] = await Promise.all([
-          api<Category[]>('/api/categories'),
-          api<Bookmark[]>('/api/bookmarks'),
-        ])
-        categories.value = cats
-        bookmarks.value = bms
-        // flush any pending ops after we have fresh data
-        void flushQueue()
+        // flush pending queue first, then load fresh data
+        if (queue.value.length) await flushQueue(false)
+        try {
+          const [cats, bms] = await Promise.all([
+            api<Category[]>('/api/categories'),
+            api<Bookmark[]>('/api/bookmarks'),
+          ])
+          categories.value = cats
+          bookmarks.value = bms
+        } catch {
+          // API failed — fall back to localStorage cache so user doesn't lose data
+          categories.value = loadLS<Category>(LS_CATS)
+          bookmarks.value = loadLS<Bookmark>(LS_BMS)
+        }
       }
-      // 默认打开"未分类"（activeCategoryId = null）
       if (!activeCategoryId.value) {
         activeCategoryId.value = null
       }
     } catch (e) {
       console.error('[loadAll] failed:', e)
-      // offline load fallback: use whatever we have in memory
     } finally {
       loading.value = false
     }
