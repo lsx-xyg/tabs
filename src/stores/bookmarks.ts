@@ -116,6 +116,19 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     bookmarks.value = bookmarks.value.filter((b) => b.id !== id)
   }
 
+  async function reorderBookmarks(ids: string[]) {
+    await api('/api/bookmarks/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    })
+    // 本地乐观更新顺序
+    const sorted = [...ids]
+      .map((id) => bookmarks.value.find((b) => b.id === id))
+      .filter(Boolean) as Bookmark[]
+    const rest = bookmarks.value.filter((b) => !ids.includes(b.id))
+    bookmarks.value = [...sorted, ...rest]
+  }
+
   function selectCategory(id: string | null) {
     activeCategoryId.value = id
     searchQuery.value = ''
@@ -135,6 +148,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     addBookmark,
     updateBookmark,
     deleteBookmark,
+    reorderBookmarks,
     selectCategory,
   }
 })

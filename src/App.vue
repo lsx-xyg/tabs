@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,7 +21,6 @@ const store = useBookmarkStore()
 const isSignedIn = computed(() => !!sessionState.value?.data)
 const userEmail = computed(() => sessionState.value?.data?.user?.email ?? '')
 
-// auth form
 const mode = ref<'login' | 'signup'>('login')
 const email = ref('')
 const password = ref('')
@@ -27,18 +28,49 @@ const name = ref('')
 const submitting = ref(false)
 const authMessage = ref('')
 
-// add bookmark dialog
-const addOpen = ref(false)
+const bmDialogOpen = ref(false)
+const editingBm = ref<Bookmark | null>(null)
 const bmName = ref('')
 const bmUrl = ref('')
 const bmCategoryId = ref<string>('')
 const bmSaving = ref(false)
 const bmError = ref('')
 
-// add category dialog
 const catOpen = ref(false)
 const catName = ref('')
 const catSaving = ref(false)
+
+const confirmState = ref<{
+  open: boolean
+  title: string
+  description: string
+  confirmText: string
+  destructive: boolean
+  onConfirm: (() => void) | null
+}>({
+  open: false,
+  title: '',
+  description: '',
+  confirmText: '删除',
+  destructive: true,
+  onConfirm: null,
+})
+
+function askConfirm(opts: {
+  title: string
+  description: string
+  confirmText?: string
+  onConfirm: () => void
+}) {
+  confirmState.value = {
+    open: true,
+    title: opts.title,
+    description: opts.description,
+    confirmText: opts.confirmText ?? '删除',
+    destructive: true,
+    onConfirm: opts.onConfirm,
+  }
+}
 
 onMounted(() => {
   if (isSignedIn.value) void store.loadAll()
@@ -98,11 +130,21 @@ async function handleSignOut() {
 }
 
 function openAddBookmark() {
+  editingBm.value = null
   bmName.value = ''
   bmUrl.value = ''
   bmCategoryId.value = store.activeCategoryId ?? ''
   bmError.value = ''
-  addOpen.value = true
+  bmDialogOpen.value = true
+}
+
+function openEditBookmark(bm: Bookmark) {
+  editingBm.value = bm
+  bmName.value = bm.name
+  bmUrl.value = bm.url
+  bmCategoryId.value = bm.categoryId ?? ''
+  bmError.value = ''
+  bmDialogOpen.value = true
 }
 
 async function submitBookmark() {
@@ -113,14 +155,22 @@ async function submitBookmark() {
   }
   bmSaving.value = true
   try {
-    await store.addBookmark({
-      name: bmName.value.trim(),
-      url: bmUrl.value.trim(),
-      categoryId: bmCategoryId.value || null,
-    })
-    addOpen.value = false
+    if (editingBm.value) {
+      await store.updateBookmark(editingBm.value.id, {
+        name: bmName.value.trim(),
+        url: bmUrl.value.trim(),
+        categoryId: bmCategoryId.value || null,
+      })
+    } else {
+      await store.addBookmark({
+        name: bmName.value.trim(),
+        url: bmUrl.value.trim(),
+        categoryId: bmCategoryId.value || null,
+      })
+    }
+    bmDialogOpen.value = false
   } catch (e: any) {
-    bmError.value = e.message ?? '添加失败'
+    bmError.value = e.message ?? '保存失败'
   } finally {
     bmSaving.value = false
   }
@@ -139,30 +189,54 @@ async function submitCategory() {
   }
 }
 
-async function removeBookmark(bm: Bookmark) {
-  if (!confirm(`删除书签「${bm.name}」？`)) return
-  await store.deleteBookmark(bm.id)
+function removeBookmark(bm: Bookmark) {
+  askConfirm({
+    title: '删除书签',
+    description: `确定删除「${bm.name}」？此操作不可撤销。`,
+    onConfirm: () => void store.deleteBookmark(bm.id),
+  })
 }
 
-async function removeCategory(id: string, label: string) {
-  if (!confirm(`删除分类「${label}」及其所有书签？`)) return
-  await store.deleteCategory(id)
+function removeCategory(id: string, label: string) {
+  askConfirm({
+    title: '删除分类',
+    description: `删除「${label}」将同时删除其下所有书签，确定继续？`,
+    onConfirm: () => void store.deleteCategory(id),
+  })
 }
+
+function openLink(url: string) {
+  window.open(url, '_blank')
+}
+
+function onDragEnd() {
+  const ids = dragList.value.map((b) => b.id)
+  if (ids.length) void store.reorderBookmarks(ids)
+}
+
+// draggable needs a writable v-model; sync with visibleBookmarks
+const dragList = computed({
+  get: () => store.visibleBookmarks,
+  set: (val: Bookmark[]) => {
+    // local optimistic: reorder store.bookmarks to match val order within current filter
+    const ids = val.map((b) => b.id)
+    const others = store.bookmarks.filter((b) => !ids.includes(b.id))
+    const ordered = ids
+      .map((id) => store.bookmarks.find((b) => b.id === id))
+      .filter(Boolean) as Bookmark[]
+    store.bookmarks = [...ordered, ...others]
+  },
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-background text-foreground">
-    <!-- header -->
     <header class="border-b">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <h1 class="text-lg font-semibold tracking-tight">Tabs</h1>
         <div class="flex items-center gap-3 text-sm">
           <template v-if="isSignedIn">
-            <Input
-              v-model="store.searchQuery"
-              placeholder="搜索书签…"
-              class="w-48"
-            />
+            <Input v-model="store.searchQuery" placeholder="搜索书签…" class="w-48" />
             <span class="text-muted-foreground">{{ userEmail }}</span>
             <Button variant="outline" size="sm" @click="handleSignOut">退出</Button>
           </template>
@@ -170,23 +244,14 @@ async function removeCategory(id: string, label: string) {
       </div>
     </header>
 
-    <!-- auth screen -->
     <main v-if="!isSignedIn" class="mx-auto max-w-md px-4 py-16">
       <div class="rounded-xl border bg-card p-6 shadow-sm">
         <h2 class="text-xl font-semibold mb-1">{{ mode === 'login' ? '登录' : '注册' }}</h2>
         <p class="text-sm text-muted-foreground mb-4">登录后书签跨设备同步</p>
         <form class="grid gap-3" @submit.prevent="handleAuthSubmit">
           <div class="flex gap-2">
-            <Button
-              :variant="mode === 'login' ? 'default' : 'outline'"
-              size="sm"
-              @click="switchMode('login')"
-            >登录</Button>
-            <Button
-              :variant="mode === 'signup' ? 'default' : 'outline'"
-              size="sm"
-              @click="switchMode('signup')"
-            >注册</Button>
+            <Button :variant="mode === 'login' ? 'default' : 'outline'" size="sm" @click="switchMode('login')">登录</Button>
+            <Button :variant="mode === 'signup' ? 'default' : 'outline'" size="sm" @click="switchMode('signup')">注册</Button>
           </div>
           <Input v-if="mode === 'signup'" v-model="name" placeholder="昵称（可选）" />
           <Input v-model="email" type="email" placeholder="邮箱" autocomplete="email" />
@@ -199,9 +264,7 @@ async function removeCategory(id: string, label: string) {
       </div>
     </main>
 
-    <!-- main app -->
     <main v-else class="mx-auto flex max-w-7xl gap-6 px-4 py-6">
-      <!-- sidebar -->
       <aside class="w-56 shrink-0">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-medium text-muted-foreground">分类</h3>
@@ -212,21 +275,13 @@ async function removeCategory(id: string, label: string) {
             class="w-full rounded-md px-3 py-2 text-left text-sm transition"
             :class="store.activeCategoryId === null ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
             @click="store.selectCategory(null)"
-          >
-            全部
-          </button>
-          <div
-            v-for="c in store.categories"
-            :key="c.id"
-            class="group flex items-center gap-1"
-          >
+          >全部</button>
+          <div v-for="c in store.categories" :key="c.id" class="group flex items-center gap-1">
             <button
               class="flex-1 rounded-md px-3 py-2 text-left text-sm transition truncate"
               :class="store.activeCategoryId === c.id ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
               @click="store.selectCategory(c.id)"
-            >
-              {{ c.name }}
-            </button>
+            >{{ c.name }}</button>
             <button
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
               @click="removeCategory(c.id, c.name)"
@@ -235,50 +290,59 @@ async function removeCategory(id: string, label: string) {
         </nav>
       </aside>
 
-      <!-- content -->
       <section class="flex-1">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold">
             {{ store.searchQuery ? '搜索结果' : (store.activeCategory?.name ?? '全部书签') }}
-            <span class="ml-2 text-sm font-normal text-muted-foreground">
-              {{ store.visibleBookmarks.length }} 个
-            </span>
+            <span class="ml-2 text-sm font-normal text-muted-foreground">{{ store.visibleBookmarks.length }} 个</span>
           </h2>
           <Button size="sm" @click="openAddBookmark">+ 添加书签</Button>
         </div>
 
         <p v-if="store.loading" class="text-sm text-muted-foreground">加载中…</p>
 
-        <div v-else-if="store.visibleBookmarks.length" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          <a
+        <VueDraggable
+          v-else-if="store.visibleBookmarks.length"
+          v-model="dragList"
+          :animation="200"
+          ghost-class="opacity-40"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+          @end="onDragEnd"
+        >
+          <div
             v-for="bm in store.visibleBookmarks"
             :key="bm.id"
-            :href="bm.url"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="group rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-3"
+            class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-3 cursor-grab active:cursor-grabbing"
           >
-            <img
-              v-if="bm.iconUrl || faviconUrl(bm.url)"
-              :src="bm.iconUrl || faviconUrl(bm.url)"
-              :alt="bm.name"
-              class="w-8 h-8 rounded"
-              loading="lazy"
-              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
-            />
-            <div v-else class="w-8 h-8 rounded bg-muted flex items-center justify-center text-xs font-bold">
-              {{ bm.name[0]?.toUpperCase() }}
+            <a
+              :href="bm.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-3 flex-1 min-w-0"
+              @click="openLink(bm.url)"
+            >
+              <img
+                v-if="bm.iconUrl || faviconUrl(bm.url)"
+                :src="bm.iconUrl || faviconUrl(bm.url)"
+                :alt="bm.name"
+                class="w-8 h-8 rounded shrink-0"
+                loading="lazy"
+                @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+              />
+              <div v-else class="w-8 h-8 rounded bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                {{ bm.name[0]?.toUpperCase() }}
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-medium truncate">{{ bm.name }}</div>
+                <div class="text-xs text-muted-foreground truncate">{{ bm.url }}</div>
+              </div>
+            </a>
+            <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-0.5">
+              <button class="text-xs text-muted-foreground hover:text-foreground px-1" title="编辑" @click.stop="openEditBookmark(bm)">✎</button>
+              <button class="text-xs text-muted-foreground hover:text-destructive px-1" title="删除" @click.stop="removeBookmark(bm)">×</button>
             </div>
-            <div class="min-w-0 flex-1">
-              <div class="text-sm font-medium truncate">{{ bm.name }}</div>
-              <div class="text-xs text-muted-foreground truncate">{{ bm.url }}</div>
-            </div>
-            <button
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive"
-              @click.prevent="removeBookmark(bm)"
-            >删除</button>
-          </a>
-        </div>
+          </div>
+        </VueDraggable>
 
         <p v-else class="text-sm text-muted-foreground py-12 text-center">
           还没有书签，点击右上角「添加书签」开始
@@ -286,12 +350,9 @@ async function removeCategory(id: string, label: string) {
       </section>
     </main>
 
-    <!-- add bookmark dialog -->
-    <Dialog v-model:open="addOpen">
+    <Dialog v-model:open="bmDialogOpen">
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>添加书签</DialogTitle>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>{{ editingBm ? '编辑书签' : '添加书签' }}</DialogTitle></DialogHeader>
         <div class="grid gap-3 py-2">
           <Input v-model="bmName" placeholder="名称（如 GitHub）" />
           <Input v-model="bmUrl" placeholder="URL（如 github.com）" />
@@ -302,20 +363,15 @@ async function removeCategory(id: string, label: string) {
           <p v-if="bmError" class="text-sm text-destructive">{{ bmError }}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="addOpen = false">取消</Button>
-          <Button @click="submitBookmark" :disabled="bmSaving">
-            {{ bmSaving ? '保存中…' : '保存' }}
-          </Button>
+          <Button variant="outline" @click="bmDialogOpen = false">取消</Button>
+          <Button @click="submitBookmark" :disabled="bmSaving">{{ bmSaving ? '保存中…' : '保存' }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
-    <!-- add category dialog -->
     <Dialog v-model:open="catOpen">
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>新建分类</DialogTitle>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>新建分类</DialogTitle></DialogHeader>
         <Input v-model="catName" placeholder="分类名称（如 开发）" @keyup.enter="submitCategory" />
         <DialogFooter>
           <Button variant="outline" @click="catOpen = false">取消</Button>
@@ -323,5 +379,15 @@ async function removeCategory(id: string, label: string) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDialog
+      :open="confirmState.open"
+      title="确认"
+      :description="confirmState.description"
+      :confirm-text="confirmState.confirmText"
+      :destructive="confirmState.destructive"
+      @update:open="confirmState.open = $event"
+      @confirm="confirmState.onConfirm?.()"
+    />
   </div>
 </template>
