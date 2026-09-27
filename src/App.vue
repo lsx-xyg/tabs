@@ -89,7 +89,7 @@ async function checkAllLinks() {
       if (!(info as any).ok) dead.add(id)
     }
     deadIds.value = dead
-    toast(dead.size ? `${dead.size} 个链接失效` : '所有链接正常', dead.size ? 'warn' : 'success')
+    toast(dead.size ? `检测完成：${dead.size} 个链接失效（已标红）` : '检测完成：所有链接正常', dead.size ? 'warn' : 'success')
   } catch {
     toast('检测失败', 'warn')
   }
@@ -222,6 +222,13 @@ async function handleAuthSubmit() {
 
 async function handleSignOut() {
   await authClient.signOut()
+  store.categories = []
+  store.bookmarks = []
+  store.activeCategoryId = null
+  localStorage.removeItem('tabs-local-categories')
+  localStorage.removeItem('tabs-local-bookmarks')
+  localStorage.removeItem('tabs-sync-queue')
+  toast('已退出登录', 'info')
   void sessionState.value.refetch()
 }
 
@@ -370,6 +377,7 @@ function exportBookmarks() {
   a.href = URL.createObjectURL(blob)
   a.download = `tabs-bookmarks-${new Date().toISOString().slice(0, 10)}.html`
   a.click()
+  toast(`已导出 ${store.bookmarks.length} 条书签`, 'success')
 }
 
 function escapeHtml(s: string): string {

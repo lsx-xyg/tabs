@@ -143,9 +143,9 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
         // flush any pending ops after we have fresh data
         void flushQueue()
       }
+      // 默认打开"未分类"（activeCategoryId = null）
       if (!activeCategoryId.value) {
-        const def = categories.value.find((c) => c.isDefault) ?? categories.value[0]
-        activeCategoryId.value = def?.id ?? null
+        activeCategoryId.value = null
       }
     } catch (e) {
       console.error('[loadAll] failed:', e)
