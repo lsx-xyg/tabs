@@ -1,7 +1,7 @@
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, and } from 'drizzle-orm'
 
 import { db } from '../src/server/db/db.js'
-import { bookmarks } from '../src/server/db/schema.js'
+import { bookmarks, categories } from '../src/server/db/schema.js'
 import { getRequestUser } from '../src/server/request.js'
 
 /**
@@ -34,11 +34,21 @@ export default async function handler(req: any, res: any) {
     // 自动补全协议
     if (!/^https?:\/\//i.test(url)) url = `https://${url}`
     const categoryId = body?.categoryId || null
+    // Verify category belongs to user; fall back to null if invalid (e.g. local unsynced category)
+    let finalCategoryId: string | null = null
+    if (categoryId) {
+      const [cat] = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(and(eq(categories.id, categoryId), eq(categories.userId, ctx.userId)))
+        .limit(1)
+      if (cat) finalCategoryId = cat.id
+    }
     const row = await db
       .insert(bookmarks)
       .values({
         userId: ctx.userId,
-        categoryId,
+        categoryId: finalCategoryId,
         name,
         url,
         iconUrl: body?.iconUrl || null,
