@@ -106,7 +106,7 @@ watch(isSignedIn, (v) => {
 function faviconUrl(url: string): string {
   try {
     const domain = new URL(url).hostname
-    return `https://${domain}/favicon.ico`
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
   } catch {
     return ''
   }
@@ -123,12 +123,10 @@ function cravatarUrl(url: string): string {
 
 function onFaviconError(e: Event, bm: Bookmark) {
   const img = e.target as HTMLImageElement
-  // first error: try cravatar
   if (!img.dataset.triedCravatar) {
     img.dataset.triedCravatar = '1'
     img.src = cravatarUrl(bm.url)
   } else {
-    // second error: hide, show letter placeholder
     img.style.display = 'none'
   }
 }
