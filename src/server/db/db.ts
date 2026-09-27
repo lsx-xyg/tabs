@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
-import { getDatabaseUrl } from '../env'
-import * as schema from './schema'
+import { getDatabaseUrl } from '../env.js'
+import * as schema from './schema.js'
 
 /**
  * 数据库连接（单一数据源）：

@@ -1,9 +1,9 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 
-import { db } from './db/db'
-import * as schema from './db/schema'
-import { getAuthSecret, readEnv } from './env'
+import { db } from './db/db.js'
+import * as schema from './db/schema.js'
+import { getAuthSecret, readEnv } from './env.js'
 
 /**
  * Better Auth 服务端实例：

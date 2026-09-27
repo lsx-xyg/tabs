@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 
 import { toNodeHandler } from 'better-auth/node'
 
-import { auth } from '../src/server/auth'
+import { auth } from '../src/server/auth.js'
 
 /**
  * 本地开发 API 服务（Better Auth）：
