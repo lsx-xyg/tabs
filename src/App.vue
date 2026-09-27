@@ -633,14 +633,14 @@ const dragList = computed({
           sidebarCollapsed ? 'md:w-0 md:overflow-hidden md:border-r-0' : 'md:w-56',
         ]"
       >
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-medium text-muted-foreground" v-if="!sidebarCollapsed">分类</h3>
+        <div class="flex items-center justify-between mb-2 min-w-56">
+          <h3 class="text-sm font-medium text-muted-foreground">分类</h3>
           <div class="flex gap-1">
             <Button variant="ghost" size="icon-sm" @click="catOpen = true"><Plus class="w-4 h-4" /></Button>
             <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = false"><X class="w-4 h-4" /></Button>
           </div>
         </div>
-        <nav class="space-y-1">
+        <nav class="space-y-1 min-w-56">
           <button
             class="w-full rounded-md px-3 py-2 text-left text-sm transition drop-target"
             :class="store.activeCategoryId === null ? 'bg-accent font-medium' : 'hover:bg-accent/50'"
