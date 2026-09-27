@@ -106,9 +106,30 @@ watch(isSignedIn, (v) => {
 function faviconUrl(url: string): string {
   try {
     const domain = new URL(url).hostname
+    return `https://${domain}/favicon.ico`
+  } catch {
+    return ''
+  }
+}
+
+function cravatarUrl(url: string): string {
+  try {
+    const domain = new URL(url).hostname
     return `https://cn.cravatar.com/favicon/api/index.php?url=${domain}`
   } catch {
     return ''
+  }
+}
+
+function onFaviconError(e: Event, bm: Bookmark) {
+  const img = e.target as HTMLImageElement
+  // first error: try cravatar
+  if (!img.dataset.triedCravatar) {
+    img.dataset.triedCravatar = '1'
+    img.src = cravatarUrl(bm.url)
+  } else {
+    // second error: hide, show letter placeholder
+    img.style.display = 'none'
   }
 }
 
@@ -581,7 +602,7 @@ const dragList = computed({
                 :alt="bm.name"
                 class="w-8 h-8 rounded shrink-0"
                 loading="lazy"
-                @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+                @error="onFaviconError($event, bm)"
               />
               <div v-else class="w-8 h-8 rounded bg-muted flex items-center justify-center text-xs font-bold shrink-0">
                 {{ bm.name[0]?.toUpperCase() }}
