@@ -192,21 +192,24 @@ async function submitBookmark() {
   }
   bmSaving.value = true
   try {
+    let r: string = 'local'
     if (editingBm.value) {
-      await store.updateBookmark(editingBm.value.id, {
+      r = await store.updateBookmark(editingBm.value.id, {
         name: bmName.value.trim(),
         url: bmUrl.value.trim(),
         categoryId: bmCategoryId.value || null,
       })
     } else {
-      await store.addBookmark({
+      r = await store.addBookmark({
         name: bmName.value.trim(),
         url: bmUrl.value.trim(),
         categoryId: bmCategoryId.value || null,
       })
     }
     bmDialogOpen.value = false
-    toast(store.offline ? '已保存到本地，联网后自动同步' : '书签已保存', store.offline ? 'warn' : 'success')
+    const name = bmName.value.trim()
+    if (r === 'online') toast(`「${name}」已保存`, 'success')
+    else if (r === 'queued') toast(`「${name}」已本地保存，联网后同步`, 'warn')
   } catch (e: any) {
     bmError.value = e.message ?? '保存失败'
   } finally {
@@ -358,10 +361,11 @@ function openLink(url: string) {
 
 function onDragEnd() {
   const ids = dragList.value.map((b) => b.id)
-  if (ids.length) {
-    void store.reorderBookmarks(ids)
-    toast(store.offline ? '排序已保存到本地，联网后同步' : '排序已更新', store.offline ? 'warn' : 'success')
-  }
+  if (!ids.length) return
+  void store.reorderBookmarks(ids).then((r) => {
+    if (r === 'online') toast('排序已同步', 'success')
+    else if (r === 'queued') toast('排序已保存，联网后自动同步', 'warn')
+  })
 }
 
 function onCardDragStart(e: DragEvent, bm: Bookmark) {
@@ -376,9 +380,10 @@ async function onCategoryDrop(e: DragEvent, categoryId: string | null) {
   if (!bmId) return
   const bm = store.bookmarks.find((b) => b.id === bmId)
   if (!bm || bm.categoryId === categoryId) return
-  await store.updateBookmark(bmId, { categoryId } as Partial<Bookmark>)
-  const name = categoryId ? store.categories.find((c) => c.id === categoryId)?.name ?? '分类' : '默认分类'
-  toast(store.offline ? `已移动到「${name}」，本地保存待同步` : `已移动到「${name}」`, store.offline ? 'warn' : 'success')
+  const targetName = categoryId ? store.categories.find((c) => c.id === categoryId)?.name ?? '分类' : '默认分类'
+  const r = await store.updateBookmark(bmId, { categoryId } as Partial<Bookmark>)
+  if (r === 'online') toast(`「${bm.name}」已移动到「${targetName}」`, 'success')
+  else if (r === 'queued') toast(`「${bm.name}」已本地保存，联网后同步`, 'warn')
 }
 
 function onDragOver(e: DragEvent) {
@@ -672,16 +677,16 @@ const dragList = computed({
     />
   </div>
 
-  <!-- toasts: top-center below header -->
-  <div class="fixed top-[60px] left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none">
+  <!-- toasts: bottom-right, slide in, stack upward -->
+  <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 items-end">
     <div
       v-for="t in toasts"
       :key="t.id"
-      class="rounded-lg border px-4 py-2 text-sm shadow-lg bg-card animate-in"
+      class="rounded-lg border px-4 py-2.5 text-sm shadow-lg backdrop-blur"
       :class="{
-        'border-green-500/30 text-green-600 dark:text-green-400': t.type === 'success',
-        'border-amber-500/30 text-amber-600 dark:text-amber-400': t.type === 'warn',
-        'border-border text-foreground': t.type === 'info',
+        'bg-green-500/95 text-white border-green-600': t.type === 'success',
+        'bg-amber-500/95 text-white border-amber-600': t.type === 'warn',
+        'bg-card/95 text-foreground border-border': t.type === 'info',
       }"
     >{{ t.msg }}</div>
   </div>

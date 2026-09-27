@@ -208,51 +208,59 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     // optimistic add
     bookmarks.value.push(bm)
 
-    if (localMode.value) return
+    if (localMode.value) return 'local' as const
     try {
       await api('/api/bookmarks', { method: 'POST', body: JSON.stringify({ name: input.name, url, categoryId: input.categoryId }) })
+      return 'online' as const
     } catch {
       offline.value = true
       enqueue({ method: 'POST', path: '/api/bookmarks', body: { name: input.name, url, categoryId: input.categoryId } })
+      return 'queued' as const
     }
   }
 
-  async function updateBookmark(id: string, patch: Partial<Bookmark>) {
+  async function updateBookmark(id: string, patch: Partial<Bookmark>): Promise<'local' | 'online' | 'queued'> {
     // optimistic update
     const i = bookmarks.value.findIndex((b) => b.id === id)
     if (i >= 0) bookmarks.value[i] = { ...bookmarks.value[i], ...patch, updatedAt: new Date().toISOString() }
-    if (localMode.value) return
+    if (localMode.value) return 'local'
     try {
       await api(`/api/bookmarks/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+      return 'online'
     } catch {
       offline.value = true
       enqueue({ method: 'PATCH', path: `/api/bookmarks/${id}`, body: patch })
+      return 'queued'
     }
   }
 
-  async function deleteBookmark(id: string) {
+  async function deleteBookmark(id: string): Promise<'local' | 'online' | 'queued'> {
     bookmarks.value = bookmarks.value.filter((b) => b.id !== id)
-    if (localMode.value) return
+    if (localMode.value) return 'local'
     try {
       await api(`/api/bookmarks/${id}`, { method: 'DELETE' })
+      return 'online'
     } catch {
       offline.value = true
       enqueue({ method: 'DELETE', path: `/api/bookmarks/${id}`, body: null })
+      return 'queued'
     }
   }
 
-  async function reorderBookmarks(ids: string[]) {
+  async function reorderBookmarks(ids: string[]): Promise<'local' | 'online' | 'queued'> {
     const sorted = [...ids]
       .map((id) => bookmarks.value.find((b) => b.id === id))
       .filter(Boolean) as Bookmark[]
     const rest = bookmarks.value.filter((b) => !ids.includes(b.id))
     bookmarks.value = [...sorted, ...rest]
-    if (localMode.value) return
+    if (localMode.value) return 'local'
     try {
       await api('/api/bookmarks/reorder', { method: 'POST', body: JSON.stringify({ ids }) })
+      return 'online'
     } catch {
       offline.value = true
       enqueue({ method: 'POST', path: '/api/bookmarks/reorder', body: { ids } })
+      return 'queued'
     }
   }
 
