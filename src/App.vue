@@ -28,6 +28,8 @@ const toggleTheme = useToggle(isDark)
 
 // mobile sidebar
 const sidebarOpen = ref(false)
+const searchExpanded = ref(false)
+const userMenuOpen = ref(false)
 
 const mode = ref<'login' | 'signup'>('login')
 const authDialogOpen = ref(false)
@@ -365,33 +367,65 @@ const dragList = computed({
 <template>
   <div class="min-h-screen bg-background text-foreground">
     <header class="border-b">
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <div class="flex items-center gap-2">
-          <Button v-if="isSignedIn" variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = true">☰</Button>
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 gap-2">
+        <div class="flex items-center gap-2 shrink-0">
+          <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = true">☰</Button>
           <h1 class="text-lg font-semibold tracking-tight">Tabs</h1>
         </div>
-        <div class="flex items-center gap-2 text-sm">
+
+        <div class="flex items-center gap-1.5 text-sm">
+          <span v-if="store.offline" class="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded hidden sm:inline">
+            离线{{ store.queueCount ? `·${store.queueCount}` : '' }}
+          </span>
+
+          <!-- search: icon on mobile, input on desktop -->
+          <div class="relative">
+            <Button variant="ghost" size="icon-sm" @click="searchExpanded = !searchExpanded">🔍</Button>
+            <Input
+              v-if="searchExpanded"
+              v-model="store.searchQuery"
+              placeholder="搜索书签…"
+              class="absolute right-0 top-1/2 -translate-y-1/2 w-40 sm:w-56"
+              autofocus
+            />
+            <Input v-else v-model="store.searchQuery" placeholder="搜索…" class="hidden md:block w-48" />
+          </div>
+
           <Button variant="ghost" size="icon-sm" @click="toggleTheme()" :title="isDark ? '切换为浅色' : '切换为深色'">
             {{ isDark ? '☀' : '☾' }}
           </Button>
-          <span v-if="store.offline" class="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded">
-            离线{{ store.queueCount ? ` · ${store.queueCount} 条待同步` : '' }}
-          </span>
-          <Input v-model="store.searchQuery" placeholder="搜索…" class="w-32 sm:w-48" />
-          <Button variant="ghost" size="sm" title="导出书签" @click="exportBookmarks">导出</Button>
-          <Button variant="ghost" size="sm" title="从 HTML 导入" @click="importInput?.click()">导入</Button>
-          <input ref="importInput" type="file" accept=".html" class="hidden" @change="onImportFile" />
-          <template v-if="isSignedIn">
-            <span class="text-muted-foreground hidden sm:inline">{{ userEmail }}</span>
-            <Button variant="outline" size="sm" @click="handleSignOut">退出</Button>
-            <Button variant="ghost" size="sm" class="text-destructive" title="删除账号" @click="handleDeleteAccount">删除账号</Button>
-          </template>
-          <Button v-else variant="outline" size="sm" @click="authDialogOpen = true">登录同步</Button>
+
+          <!-- user dropdown -->
+          <div class="relative">
+            <button
+              class="flex items-center gap-1.5 rounded-full hover:bg-accent px-2 py-1"
+              @click="userMenuOpen = !userMenuOpen"
+            >
+              <div class="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                {{ (userEmail || '?')[0]?.toUpperCase() }}
+              </div>
+              <span class="hidden sm:inline text-xs text-muted-foreground">{{ userEmail }}</span>
+            </button>
+            <div
+              v-if="userMenuOpen"
+              class="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg py-1 z-50"
+              @click.outside="userMenuOpen = false"
+            >
+              <button class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks; userMenuOpen = false">导出书签</button>
+              <button class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="importInput?.click(); userMenuOpen = false">导入书签</button>
+              <div class="border-t my-1"></div>
+              <template v-if="isSignedIn">
+                <button class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="handleSignOut; userMenuOpen = false">退出登录</button>
+                <button class="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent" @click="handleDeleteAccount; userMenuOpen = false">删除账号</button>
+              </template>
+              <button v-else class="w-full text-left px-3 py-2 text-sm hover:bg-accent" @click="authDialogOpen = true; userMenuOpen = false">登录同步</button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
 
-    <div v-if="sessionState.isPending" class="min-h-screen flex items-center justify-center">
+    <div v-if="sessionState.isPending" class="flex items-center justify-center py-24">
       <div class="text-sm text-muted-foreground">加载中…</div>
     </div>
 
@@ -424,12 +458,12 @@ const dragList = computed({
               @click="store.selectCategory(c.id); sidebarOpen = false"
             >{{ c.name }}</button>
             <button
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
+              class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground px-1"
               title="重命名"
               @click="openRenameCategory(c)"
             >✎</button>
             <button
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
+              class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs text-muted-foreground hover:text-destructive px-1"
               @click="removeCategory(c.id, c.name)"
             >×</button>
           </div>
@@ -451,6 +485,7 @@ const dragList = computed({
           v-else-if="store.visibleBookmarks.length"
           v-model="dragList"
           :animation="200"
+          :handle="'.drag-handle'"
           ghost-class="opacity-40"
           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
           @end="onDragEnd"
@@ -458,8 +493,9 @@ const dragList = computed({
           <div
             v-for="bm in store.visibleBookmarks"
             :key="bm.id"
-            class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-3 cursor-grab active:cursor-grabbing"
+            class="group relative rounded-lg border bg-card p-3 hover:shadow-md transition flex items-center gap-2"
           >
+            <span class="drag-handle cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground select-none text-sm shrink-0 px-0.5" title="拖拽排序">⋮⋮</span>
             <a
               :href="bm.url"
               target="_blank"
@@ -483,7 +519,7 @@ const dragList = computed({
                 <div class="text-xs text-muted-foreground truncate">{{ bm.url }}</div>
               </div>
             </a>
-            <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-0.5">
+            <div class="absolute top-1 right-1 flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100">
               <button class="text-xs text-muted-foreground hover:text-foreground px-1" title="编辑" @click.stop="openEditBookmark(bm)">✎</button>
               <button class="text-xs text-muted-foreground hover:text-destructive px-1" title="删除" @click.stop="removeBookmark(bm)">×</button>
             </div>
@@ -555,6 +591,8 @@ const dragList = computed({
         </form>
       </DialogContent>
     </Dialog>
+
+    <input ref="importInput" type="file" accept=".html" class="hidden" @change="onImportFile" />
 
     <ConfirmDialog
       :open="confirmState.open"
