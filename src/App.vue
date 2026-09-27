@@ -244,7 +244,11 @@ const dragList = computed({
       </div>
     </header>
 
-    <main v-if="!isSignedIn" class="mx-auto max-w-md px-4 py-16">
+    <div v-if="sessionState.isPending" class="min-h-screen flex items-center justify-center">
+      <div class="text-sm text-muted-foreground">加载中…</div>
+    </div>
+
+    <main v-else-if="!isSignedIn" class="mx-auto max-w-md px-4 py-16">
       <div class="rounded-xl border bg-card p-6 shadow-sm">
         <h2 class="text-xl font-semibold mb-1">{{ mode === 'login' ? '登录' : '注册' }}</h2>
         <p class="text-sm text-muted-foreground mb-4">登录后书签跨设备同步</p>
