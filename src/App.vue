@@ -402,7 +402,7 @@ const dragList = computed({
 
 <template>
   <div class="min-h-screen bg-background text-foreground">
-    <header class="border-b">
+    <header class="border-b sticky top-0 z-30 bg-background">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 gap-2">
         <div class="flex items-center gap-2 shrink-0">
           <Button variant="ghost" size="icon-sm" class="md:hidden" @click="sidebarOpen = true">
@@ -668,12 +668,12 @@ const dragList = computed({
     />
   </div>
 
-  <!-- toasts -->
-  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center">
+  <!-- toasts: top-center -->
+  <div class="fixed top-16 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center">
     <div
       v-for="t in toasts"
       :key="t.id"
-      class="rounded-lg border px-4 py-2 text-sm shadow-lg bg-card"
+      class="rounded-lg border px-4 py-2 text-sm shadow-lg bg-card animate-in"
       :class="{
         'border-green-500/30 text-green-600 dark:text-green-400': t.type === 'success',
         'border-amber-500/30 text-amber-600 dark:text-amber-400': t.type === 'warn',
@@ -685,8 +685,9 @@ const dragList = computed({
 
 <style scoped>
 .drop-target.drag-over {
-  background: hsl(var(--primary) / 0.15) !important;
-  outline: 2px dashed hsl(var(--primary));
-  outline-offset: -2px;
+  background: hsl(var(--primary) / 0.25) !important;
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: -3px;
+  font-weight: 600;
 }
 </style>

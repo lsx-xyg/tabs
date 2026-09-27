@@ -77,7 +77,8 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     if (activeCategoryId.value) {
       return bookmarks.value.filter((b) => b.categoryId === activeCategoryId.value)
     }
-    return bookmarks.value
+    // 默认分类：只显示未分类的书签
+    return bookmarks.value.filter((b) => b.categoryId == null)
   })
 
   const queueCount = computed(() => queue.value.length)
@@ -213,6 +214,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     try {
       await api('/api/bookmarks', { method: 'POST', body: JSON.stringify({ name: input.name, url, categoryId: input.categoryId }) })
     } catch {
+      offline.value = true
       enqueue({ method: 'POST', path: '/api/bookmarks', body: { name: input.name, url, categoryId: input.categoryId } })
     }
   }
