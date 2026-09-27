@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useDark, usePreferredDark } from '@vueuse/core'
 import { VueDraggable } from 'vue-draggable-plus'
 import { Search, Sun, Moon, Monitor, Menu, Plus, Pencil, Trash2, GripVertical, LogOut, Trash, Upload, Download, X } from 'lucide-vue-next'
@@ -59,6 +59,15 @@ const sidebarOpen = ref(false)
 const searchExpanded = ref(false)
 const userMenuOpen = ref(false)
 const pcMenuOpen = ref(false)
+const userMenuRef = ref<HTMLElement | null>(null)
+function onDocClick(e: MouseEvent) {
+  if (userMenuRef.value && !userMenuRef.value.contains(e.target as Node)) {
+    userMenuOpen.value = false
+    pcMenuOpen.value = false
+  }
+}
+onMounted(() => document.addEventListener('click', onDocClick))
+onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 // toast
 const toasts = ref<{ id: number; msg: string; type: 'info' | 'success' | 'warn' }[]>([])
@@ -511,6 +520,7 @@ const dragList = computed({
 
           <!-- user dropdown: hover on PC, click on mobile -->
           <div
+            ref="userMenuRef"
             class="relative"
             @mouseenter="pcMenuOpen = true"
             @mouseleave="pcMenuOpen = false"
@@ -526,7 +536,6 @@ const dragList = computed({
             <div
               v-if="userMenuOpen || pcMenuOpen"
               class="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg py-1 z-50"
-              @click.outside="userMenuOpen = false"
             >
               <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="exportBookmarks; userMenuOpen = false">
                 <Download class="w-4 h-4" /> 导出书签
