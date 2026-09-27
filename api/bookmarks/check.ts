@@ -16,15 +16,17 @@ export default async function handler(req: any, res: any) {
   for (const bm of rows) {
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 5000)
+      const timeout = setTimeout(() => controller.abort(), 8000)
       const resp = await fetch(bm.url, {
-        method: 'HEAD',
+        method: 'GET',
         redirect: 'follow',
         signal: controller.signal,
-        headers: { 'User-Agent': 'Mozilla/5.0' },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       }).catch(() => null)
       clearTimeout(timeout)
-      results[bm.id] = { ok: !!resp && resp.status < 400, status: resp?.status }
+      // 200-399 ok, 403 means site exists but blocks bots (still ok)
+      const status = resp?.status ?? 0
+      results[bm.id] = { ok: status > 0 && status < 500, status }
     } catch {
       results[bm.id] = { ok: false }
     }

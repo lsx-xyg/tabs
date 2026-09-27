@@ -49,8 +49,28 @@ watch(themeMode, (m) => {
 watch(systemDark, (v) => {
   if (themeMode.value === 'system') isDark.value = v
 })
-function cycleTheme() {
-  themeMode.value = themeMode.value === 'light' ? 'dark' : themeMode.value === 'dark' ? 'system' : 'light'
+async function cycleTheme(e: MouseEvent) {
+  const next = themeMode.value === 'light' ? 'dark' : themeMode.value === 'dark' ? 'system' : 'light'
+  const root = document.documentElement
+  const darkTarget = next === 'dark' || (next === 'system' && systemDark.value)
+  // circular reveal from click point
+  if (document.startViewTransition) {
+    const x = e.clientX || window.innerWidth - 40
+    const y = e.clientY || 40
+    const transition = document.startViewTransition(() => {
+      themeMode.value = next
+      root.classList.toggle('dark', darkTarget)
+    })
+    await transition.ready
+    const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+    document.documentElement.animate(
+      { clipPath: [`circle(0px at ${x}px ${y})`, `circle(${r}px at ${x}px ${y})`] },
+      { duration: 500, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' }
+    )
+  } else {
+    themeMode.value = next
+    root.classList.toggle('dark', darkTarget)
+  }
 }
 const themeLabel = computed(() => themeMode.value === 'light' ? '浅色' : themeMode.value === 'dark' ? '深色' : '跟随系统')
 
@@ -72,26 +92,34 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 // toast
 const toasts = ref<{ id: number; msg: string; type: 'info' | 'success' | 'warn' }[]>([])
 let toastId = 0
-function toast(msg: string, type: 'info' | 'success' | 'warn' = 'info') {
+function toast(msg: string, type: 'info' | 'success' | 'warn' = 'info', persistent = false) {
   const id = ++toastId
   toasts.value.push({ id, msg, type })
+  if (!persistent) {
+    setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id) }, 2500)
+  }
+  return id
+}
+function updateToast(id: number, msg: string, type: 'info' | 'success' | 'warn' = 'info') {
+  const t = toasts.value.find((t) => t.id === id)
+  if (t) { t.msg = msg; t.type = type }
   setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id) }, 2500)
 }
 
 const deadIds = ref<Set<string>>(new Set())
 async function checkAllLinks() {
-  toast('正在检测链接…', 'info')
+  const id = toast('正在检测链接…', 'info', true)
   try {
     const r = await fetch('/api/bookmarks/check', { method: 'POST', credentials: 'include' })
     const data = await r.json()
     const dead = new Set<string>()
-    for (const [id, info] of Object.entries(data.results ?? {})) {
-      if (!(info as any).ok) dead.add(id)
+    for (const [bid, info] of Object.entries(data.results ?? {})) {
+      if (!(info as any).ok) dead.add(bid)
     }
     deadIds.value = dead
-    toast(dead.size ? `检测完成：${dead.size} 个链接失效（已标红）` : '检测完成：所有链接正常', dead.size ? 'warn' : 'success')
+    updateToast(id, dead.size ? `检测完成：${dead.size} 个链接失效（已标红）` : '检测完成：所有链接正常', dead.size ? 'warn' : 'success')
   } catch {
-    toast('检测失败', 'warn')
+    updateToast(id, '检测失败', 'warn')
   }
 }
 
@@ -519,7 +547,7 @@ const dragList = computed({
             <Input v-model="store.searchQuery" placeholder="搜索…" class="hidden md:block w-48" />
           </div>
 
-          <Button variant="ghost" size="icon-sm" @click="cycleTheme()" :title="`主题：${themeLabel}（点击切换）`">
+          <Button variant="ghost" size="icon-sm" @click="cycleTheme($event)" :title="`主题：${themeLabel}（点击切换）`">
             <Sun v-if="themeMode === 'light'" class="w-4 h-4" />
             <Moon v-else-if="themeMode === 'dark'" class="w-4 h-4" />
             <Monitor v-else class="w-4 h-4" />
