@@ -28,21 +28,23 @@ export default async function handler(req: any, res: any) {
     ])
     const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), categories: cats, bookmarks: bms }, null, 2)
 
-    // Ensure parent directory exists via MKCOL (坚果云 needs this)
-    try {
-      const url = new URL(row.webdavUrl)
-      const parent = url.pathname.substring(0, url.pathname.lastIndexOf('/'))
-      if (parent && parent !== '/') {
-        const parentUrl = `${url.origin}${parent}/`
-        await fetch(parentUrl, { method: 'MKCOL', headers: { Authorization: auth } })
-      }
-    } catch {}
-
-    const resp = await fetch(row.webdavUrl, {
+    // Try PUT; if 409 (parent missing), MKCOL parent and retry
+    const doPut = () => fetch(row.webdavUrl, {
       method: 'PUT',
       headers: { Authorization: auth, 'Content-Type': 'application/json' },
       body: payload,
     })
+    let resp = await doPut()
+    if (resp.status === 409) {
+      try {
+        const url = new URL(row.webdavUrl)
+        const parent = url.pathname.substring(0, url.pathname.lastIndexOf('/'))
+        if (parent && parent !== '/') {
+          await fetch(`${url.origin}${parent}/`, { method: 'MKCOL', headers: { Authorization: auth } })
+        }
+      } catch {}
+      resp = await doPut()
+    }
     if (!resp.ok && resp.status !== 201 && resp.status !== 204) {
       const text = await resp.text().catch(() => '')
       return res.status(502).json({ error: `WebDAV PUT ${resp.status}: ${text.slice(0, 200)}` })
