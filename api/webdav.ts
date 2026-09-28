@@ -27,13 +27,25 @@ export default async function handler(req: any, res: any) {
       db.select().from(bookmarks).where(eq(bookmarks.userId, ctx.userId)),
     ])
     const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), categories: cats, bookmarks: bms }, null, 2)
+
+    // Ensure parent directory exists via MKCOL (坚果云 needs this)
+    try {
+      const url = new URL(row.webdavUrl)
+      const parent = url.pathname.substring(0, url.pathname.lastIndexOf('/'))
+      if (parent && parent !== '/') {
+        const parentUrl = `${url.origin}${parent}/`
+        await fetch(parentUrl, { method: 'MKCOL', headers: { Authorization: auth } })
+      }
+    } catch {}
+
     const resp = await fetch(row.webdavUrl, {
       method: 'PUT',
       headers: { Authorization: auth, 'Content-Type': 'application/json' },
       body: payload,
     })
     if (!resp.ok && resp.status !== 201 && resp.status !== 204) {
-      return res.status(502).json({ error: `WebDAV PUT failed: ${resp.status}` })
+      const text = await resp.text().catch(() => '')
+      return res.status(502).json({ error: `WebDAV PUT ${resp.status}: ${text.slice(0, 200)}` })
     }
     return res.json({ ok: true, size: payload.length, categories: cats.length, bookmarks: bms.length })
   }
