@@ -27,9 +27,10 @@ export default async function handler(req: any, res: any) {
       db.select().from(bookmarks).where(eq(bookmarks.userId, ctx.userId)),
     ])
     const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), categories: cats, bookmarks: bms }, null, 2)
+    const webdavUrl = row.webdavUrl!
 
     // Try PUT; if 409 (parent missing), MKCOL parent and retry
-    const doPut = () => fetch(row.webdavUrl, {
+    const doPut = () => fetch(webdavUrl, {
       method: 'PUT',
       headers: { Authorization: auth, 'Content-Type': 'application/json' },
       body: payload,
@@ -37,7 +38,7 @@ export default async function handler(req: any, res: any) {
     let resp = await doPut()
     if (resp.status === 409) {
       try {
-        const url = new URL(row.webdavUrl)
+        const url = new URL(webdavUrl)
         const parent = url.pathname.substring(0, url.pathname.lastIndexOf('/'))
         if (parent && parent !== '/') {
           await fetch(`${url.origin}${parent}/`, { method: 'MKCOL', headers: { Authorization: auth } })
@@ -53,7 +54,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (action === 'restore') {
-    const resp = await fetch(row.webdavUrl, { method: 'GET', headers: { Authorization: auth } })
+    const resp = await fetch(row.webdavUrl!, { method: 'GET', headers: { Authorization: auth } })
     if (!resp.ok) return res.status(502).json({ error: `WebDAV GET failed: ${resp.status}` })
     const data = JSON.parse(await resp.text())
     return res.json({ ok: true, data })
