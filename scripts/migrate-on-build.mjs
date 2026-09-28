@@ -20,12 +20,19 @@ if (!url) {
 
 console.log('[migrate-on-build] 检测到直连串，补列 + 执行迁移…')
 
-// Raw SQL: 确保 parent_id 列存在（drizzle 迁移记录可能与实际 schema 不一致）
+// Raw SQL: 确保 schema 与实际一致
 try {
   const sql = postgres(url, { max: 1 })
   await sql`ALTER TABLE IF EXISTS categories ADD COLUMN IF NOT EXISTS parent_id text`
+  await sql`CREATE TABLE IF NOT EXISTS "user_settings" (
+    "user_id" text PRIMARY KEY NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "webdav_url" text,
+    "webdav_user" text,
+    "webdav_pass_enc" text,
+    "updated_at" timestamp DEFAULT now()
+  )`
   await sql.end()
-  console.log('[migrate-on-build] parent_id 列已确认存在')
+  console.log('[migrate-on-build] schema 已确认')
 } catch (e) {
   console.error('[migrate-on-build] 补列失败:', e.message)
   process.exit(1)

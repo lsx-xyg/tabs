@@ -162,10 +162,23 @@ const catSaving = ref(false)
 
 // WebDAV backup
 const webdavDialogOpen = ref(false)
-const webdavUrl = ref(localStorage.getItem('tabs-webdav-url') || 'https://dav.jianguoyun.com/dav/tabs/bookmarks.json')
-const webdavUser = ref(localStorage.getItem('tabs-webdav-user') || '')
-const webdavPass = ref(localStorage.getItem('tabs-webdav-pass') || '')
+const webdavUrl = ref('')
+const webdavUser = ref('')
+const webdavPass = ref('')
+const webdavPassSet = ref(false)
 const webdavBusy = ref(false)
+
+async function loadWebdavSettings() {
+  try {
+    const r = await fetch('/api/settings', { credentials: 'include' })
+    if (r.ok) {
+      const d = await r.json()
+      webdavUrl.value = d.webdavUrl || 'https://dav.jianguoyun.com/dav/tabs/bookmarks.json'
+      webdavUser.value = d.webdavUser || ''
+      webdavPassSet.value = !!d.webdavPassSet
+    }
+  } catch {}
+}
 
 async function webdavBackup() {
   webdavBusy.value = true
@@ -173,7 +186,7 @@ async function webdavBackup() {
     const r = await fetch('/api/webdav', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'backup', webdavUrl: webdavUrl.value, username: webdavUser.value, password: webdavPass.value }),
+      body: JSON.stringify({ action: 'backup' }),
     })
     const d = await r.json()
     if (r.ok) toast(`已备份 ${d.categories} 个分类、${d.bookmarks} 条书签到 WebDAV`, 'success')
@@ -188,22 +201,33 @@ async function webdavRestore() {
     const r = await fetch('/api/webdav', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'restore', webdavUrl: webdavUrl.value, username: webdavUser.value, password: webdavPass.value }),
+      body: JSON.stringify({ action: 'restore' }),
     })
     const d = await r.json()
     if (r.ok) {
       toast(`已从 WebDAV 恢复 ${d.data.categories?.length ?? 0} 个分类、${d.data.bookmarks?.length ?? 0} 条书签`, 'success')
-      // TODO: merge into DB on a later ticket; for now just show count
     } else toast('恢复失败: ' + (d.error || r.status), 'warn')
   } catch { toast('恢复失败', 'warn') }
   finally { webdavBusy.value = false }
 }
 
-function saveWebdavConfig() {
-  localStorage.setItem('tabs-webdav-url', webdavUrl.value)
-  localStorage.setItem('tabs-webdav-user', webdavUser.value)
-  localStorage.setItem('tabs-webdav-pass', webdavPass.value)
-  toast('WebDAV 配置已保存', 'success')
+async function saveWebdavConfig() {
+  webdavBusy.value = true
+  try {
+    const body: Record<string, string> = { webdavUrl: webdavUrl.value, webdavUser: webdavUser.value }
+    if (webdavPass.value) body.webdavPass = webdavPass.value
+    const r = await fetch('/api/settings', {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (r.ok) {
+      toast('WebDAV 配置已保存', 'success')
+      webdavPass.value = ''
+      webdavPassSet.value = true
+    } else toast('保存失败', 'warn')
+  } catch { toast('保存失败', 'warn') }
+  finally { webdavBusy.value = false }
 }
 
 const confirmState = ref<{
@@ -646,7 +670,7 @@ const dragList = computed({
                 <Search class="w-4 h-4" /> 检测链接
               </button>
               <div class="border-t my-1"></div>
-              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="webdavDialogOpen = true; userMenuOpen = false">
+              <button class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent" @click="webdavDialogOpen = true; loadWebdavSettings(); userMenuOpen = false">
                 <Cloud class="w-4 h-4" /> WebDAV 备份
               </button>
               <div class="border-t my-1"></div>

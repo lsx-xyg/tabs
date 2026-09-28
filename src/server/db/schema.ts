@@ -109,3 +109,12 @@ export const bookmarks = pgTable(
     index('bookmarks_category_id_idx').on(table.categoryId),
   ],
 )
+
+/** 用户设置（WebDAV 等，按 user_id 一对一） */
+export const userSettings = pgTable('user_settings', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  webdavUrl: text('webdav_url'),
+  webdavUser: text('webdav_user'),
+  webdavPassEnc: text('webdav_pass_enc'),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
+})
