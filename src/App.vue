@@ -888,7 +888,7 @@ const dragList = computed({
         <div class="grid gap-2 py-2">
           <Input v-model="webdavUrl" placeholder="WebDAV 文件地址" />
           <Input v-model="webdavUser" placeholder="用户名（邮箱）" />
-          <Input v-model="webdavPass" type="password" placeholder="应用密码" />
+          <Input v-model="webdavPass" type="password" :placeholder="webdavPassSet ? '已设置，留空则不修改' : '应用密码'" />
           <p class="text-xs text-muted-foreground">坚果云：用户中心 → 安全 → 添加应用密码</p>
         </div>
         <DialogFooter class="flex gap-2">

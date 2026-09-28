@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../src/server/db/db.js'
 import { userSettings } from '../src/server/db/schema.js'
 import { getRequestUser } from '../src/server/request.js'
-import { encrypt, decrypt } from '../src/server/encrypt.js'
+import { encrypt } from '../src/server/encrypt.js'
 
 /**
  * GET /api/settings — 返回当前用户设置（密码已脱敏）
@@ -23,16 +23,14 @@ export default async function handler(req: any, res: any) {
 
   if (req.method === 'PUT') {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const values: Record<string, unknown> = {
-      userId: ctx.userId,
-      updatedAt: new Date(),
-    }
-    if (body.webdavUrl !== undefined) values.webdavUrl = body.webdavUrl || null
-    if (body.webdavUser !== undefined) values.webdavUser = body.webdavUser || null
-    if (body.webdavPass) values.webdavPassEnc = encrypt(body.webdavPass)
-    await db.insert(userSettings).values(values).onConflictDoUpdate({
+    const set: Record<string, unknown> = { updatedAt: new Date() }
+    const insert: Record<string, unknown> = { userId: ctx.userId, updatedAt: new Date() }
+    if (body.webdavUrl !== undefined) { set.webdavUrl = body.webdavUrl || null; insert.webdavUrl = body.webdavUrl || null }
+    if (body.webdavUser !== undefined) { set.webdavUser = body.webdavUser || null; insert.webdavUser = body.webdavUser || null }
+    if (body.webdavPass) { const enc = encrypt(body.webdavPass); set.webdavPassEnc = enc; insert.webdavPassEnc = enc }
+    await db.insert(userSettings).values(insert).onConflictDoUpdate({
       target: userSettings.userId,
-      set: values,
+      set,
     })
     return res.json({ ok: true })
   }
