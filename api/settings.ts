@@ -28,9 +28,9 @@ export default async function handler(req: any, res: any) {
     if (body.webdavUrl !== undefined) { set.webdavUrl = body.webdavUrl || null; insert.webdavUrl = body.webdavUrl || null }
     if (body.webdavUser !== undefined) { set.webdavUser = body.webdavUser || null; insert.webdavUser = body.webdavUser || null }
     if (body.webdavPass) { const enc = encrypt(body.webdavPass); set.webdavPassEnc = enc; insert.webdavPassEnc = enc }
-    await db.insert(userSettings).values(insert).onConflictDoUpdate({
+    await db.insert(userSettings).values(insert as any).onConflictDoUpdate({
       target: userSettings.userId,
-      set,
+      set: set as any,
     })
     return res.json({ ok: true })
   }
