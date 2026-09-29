@@ -73,6 +73,40 @@ drizzle/               # Drizzle 迁移 SQL
 - 组件内部 `<style>` 若用到 `@apply`，需加 `@reference` 指向 `src/style.css`。
 - 唯一核心 seam 为书签仓库（bookmark repository），后续迭代所有数据读写经它中转。
 
+## 浏览器扩展（一键收藏当前页）
+
+`extension/` 目录下是一个 Manifest V3 扩展，安装后点击图标即可把当前网页收藏到你的 Tabs 导航站。
+
+### 安装
+
+1. 先在浏览器里登录你的 Tabs 站点（如 `https://tabs.dbthree.dpdns.org`），保持登录态。
+2. 打开浏览器扩展管理页：
+   - Chrome / Edge：地址栏输入 `chrome://extensions`（Edge 为 `edge://extensions`）
+3. 打开右上角「开发者模式」。
+4. 点「加载已解压的扩展程序」，选择本仓库的 `extension/` 目录。
+5. 工具栏会出现 Tabs 图标。
+
+### 使用
+
+- 浏览任意网页时，点工具栏的 Tabs 图标。
+- 弹窗自动填入当前页面的标题和 URL，并从服务器拉取你的分类列表。
+- 选择分类（不选则放入「未分类」），点「保存」。
+- 保存成功后弹窗自动关闭，书签已同步到账号，其他设备刷新即可看到。
+
+### 注意
+
+- 扩展依赖浏览器里已登录的 Tabs 站点会话（cookie），未登录会提示「保存失败，请先登录」。
+- 若部署地址不是默认的 `https://tabs.dbthree.dpdns.org`，需修改 `extension/popup.js` 顶部的 `BASE` 常量后重新加载扩展。
+- 扩展源码无构建步骤，直接加载目录即可。
+
+## 备份（WebDAV / 坚果云）
+
+登录后点头像 →「WebDAV 备份」，填入 WebDAV 地址、用户名、应用密码（坚果云在「用户中心 → 安全 → 添加应用密码」生成）。
+
+- **备份**：把当前账号全部分类+书签导出为 JSON，PUT 到 WebDAV 地址；父目录不存在时自动 MKCOL 创建。
+- **恢复**：从 WebDAV 拉取 JSON（当前版本仅预览数量，合并导入后续迭代）。
+- 密码用 AES-256-GCM 加密后存入 `user_settings` 表（密钥来自 `BETTER_AUTH_SECRET`），不明文回传。
+
 ## 工程化
 
 - Issue / Spec / Tickets 均托管在 GitHub Issues，见 `AGENTS.md` 与 `docs/agents/`。
