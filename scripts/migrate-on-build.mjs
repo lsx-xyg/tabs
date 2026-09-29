@@ -31,6 +31,11 @@ try {
     "webdav_pass_enc" text,
     "updated_at" timestamp DEFAULT now()
   )`
+  await sql`CREATE TABLE IF NOT EXISTS "extension_tokens" (
+    "token" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "created_at" timestamp DEFAULT now()
+  )`
   await sql.end()
   console.log('[migrate-on-build] schema 已确认')
 } catch (e) {

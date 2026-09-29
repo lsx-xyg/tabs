@@ -118,3 +118,10 @@ export const userSettings = pgTable('user_settings', {
   webdavPassEnc: text('webdav_pass_enc'),
   updatedAt: timestamp('updated_at', { mode: 'date' }).notNull().defaultNow(),
 })
+
+/** 扩展长期 token（MV3 扩展免 cookie 登录用） */
+export const extensionTokens = pgTable('extension_tokens', {
+  token: text('token').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+})
