@@ -190,7 +190,8 @@ npm run db:migrate    # 应用迁移（使用 DATABASE_URL_UNPOOLED）
 
 ## 🤝 贡献
 
-欢迎通过 [GitHub Issues](https://github.com/lsx-xyg/tabs/issues) 提交缺陷与需求，通过 Pull Request 贡献代码。提交前请确保通过 `npm test` 与 `npm run build`。
+欢迎通过 [GitHub Issues](https://github.com/lsx-xyg/tabs/issues) 提交缺陷与需求，通过 Pull Request 贡献代码。
+提交前请确保通过 `npm test` 与 `npm run build`。
 
 <details>
 <summary>常见问题</summary>
