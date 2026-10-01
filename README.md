@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logo.svg" alt="Tabs" width="120" />
+<img src="docs/logo.png" alt="Tabs" width="120" />
 
 # Tabs
 
@@ -12,7 +12,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Web-4fc08d)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-[在线使用](https://tabs.dbthree.dpdns.org/) · [仓库](https://github.com/lsx-xyg/tabs) · [反馈](https://github.com/lsx-xyg/tabs/issues)
+[在线体验](https://tabs.dbthree.dpdns.org/) · [反馈](https://github.com/lsx-xyg/tabs/issues)
 
 </div>
 
