@@ -3,5 +3,7 @@
     "line_length": 120
   },
   "MD033": false,
+  "MD036": false,
+  "MD041": false,
   "MD051": false
 }
