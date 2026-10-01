@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="docs/logo.png" alt="Tabs" width="120" />
-
-<!-- 替换为实际项目 Logo：docs/logo.png；当前可先用 public/favicon.svg -->
+<img src="logo.svg" alt="Tabs" width="120" />
 
 # Tabs
 
