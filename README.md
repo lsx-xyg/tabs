@@ -1,4 +1,12 @@
+<div align="center">
+
+<img src="docs/logo.png" alt="Tabs" width="120" />
+
+<!-- 替换为实际项目 Logo：docs/logo.png；当前可先用 public/favicon.svg -->
+
 # Tabs
+
+**一个自托管、可自定义的网页版书签导航应用，登录后数据跨设备同步**
 
 ![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
@@ -6,47 +14,58 @@
 ![Platform](https://img.shields.io/badge/Platform-Web-4fc08d)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-一个自托管、可自定义的网页版书签导航应用：左侧分类导航，中间卡片式快捷访问，登录后数据跨设备同步。
+[在线使用](https://tabs.dbthree.dpdns.org/) · [仓库](https://github.com/lsx-xyg/tabs) · [反馈](https://github.com/lsx-xyg/tabs/issues)
+
+</div>
 
 ## 目录
 
-- [项目简介](#项目简介)
-- [安装](#安装)
-- [使用](#使用)
-- [配置](#配置)
-- [项目结构](#项目结构)
-- [开发与扩展](#开发与扩展)
-- [贡献](#贡献)
-- [常见问题](#常见问题)
-- [许可证](#许可证)
+- [💡 这是什么](#💡-这是什么)
+- [✨ 功能](#✨-功能)
+- [🚀 安装](#🚀-安装)
+- [📖 使用](#📖-使用)
+- [⚙️ 配置](#⚙️-配置)
+- [🛠️ 开发](#🛠️-开发)
+- [📁 项目结构](#📁-项目结构)
+- [🧩 扩展](#🧩-扩展)
+- [🤝 贡献](#🤝-贡献)
+- [📄 License](#📄-license)
 
-## 项目简介
+## 💡 这是什么
 
-Tabs 是一个自己掌控数据的书签导航站，替代浏览器本地书签，解决跨设备同步问题：
+Tabs 是一个自己掌控数据的书签导航站，用来替代浏览器本地书签：
 
-- 分类导航 + 卡片式快捷访问，点击卡片在新标签页打开
-- 邮箱登录（Better Auth），多设备登录同一账号数据一致
-- 书签与分类的增删改查、拖拽排序、拖拽移动分类
-- 跨分类搜索名称与 URL
-- 离线可用：本地缓存 + 离线队列，网络恢复后自动同步
-- 导入 / 导出 JSON，按 URL 自动去重
-- 自动抓取网站图标（favicon → Cravatar → 首字母占位）
-- 深色 / 浅色主题切换，跟随系统主题
-- 响应式布局（桌面 / 平板 / 手机），侧边栏可收缩
-- PWA，可安装到设备
-- 链接失效检测
-- WebDAV 备份（兼容坚果云），密码 AES-256-GCM 加密存储
-- Chrome 扩展（Manifest V3）：一键收藏当前网页，支持扩展内直接登录
+- **解决什么**：书签无法跨设备同步，且缺少统一、可自定义的快速访问入口。
+- **适合谁**：有多台设备、希望数据掌握在自己手里的个人用户。
+- **和同类工具的区别**：自托管 + 数据全量可导出备份，认证、数据库、备份均可自己掌控。
 
-## 安装
+## ✨ 功能
 
-### 普通用户
+| 功能 | 说明 |
+| --- | --- |
+| 🗂️ 分类导航 | 左侧分类 + 卡片式快捷访问，点击卡片在新标签页打开 |
+| 🔁 跨设备同步 | Better Auth + Neon Postgres，多设备登录同一账号数据一致 |
+| 📶 离线可用 | 本地缓存 + 离线队列，网络恢复后自动重放同步 |
+| 🔍 全局搜索 | 跨所有分类匹配书签名称与 URL |
+| 🖱️ 拖拽管理 | 分类内拖拽排序，拖到其他分类完成移动 |
+| 📥 导入导出 | JSON 导入导出，按 URL 自动去重 |
+| 🧩 浏览器扩展 | Manifest V3 一键收藏当前页，支持扩展内直接登录 |
+| 🌙 主题切换 | 深色 / 浅色，跟随系统主题，圆形扩散过渡动画 |
+| 📱 响应式 + PWA | 桌面 / 平板 / 手机自适应，可安装到设备 |
+| ☁️ WebDAV 备份 | 兼容坚果云，密码 AES-256-GCM 加密存储 |
+| 🩺 链接检测 | 书签链接失效检测与结果提示 |
 
-无需安装，直接访问已部署站点，注册登录即可使用。
+<!-- 替换为实际主界面截图：docs/screenshot-main.png -->
+
+## 🚀 安装
+
+### 下载即用
+
+无需安装，直接访问 [在线站点](https://tabs.dbthree.dpdns.org/)，注册登录即可使用。
 
 浏览器扩展（可选，一键收藏当前页）：
 
-1. 打开浏览器扩展管理页（Chrome / Edge 地址栏输入 `chrome://extensions`）。
+1. 打开扩展管理页（Chrome / Edge 地址栏输入 `chrome://extensions`）。
 2. 开启右上角「开发者模式」。
 3. 点击「加载已解压的扩展程序」，选择本仓库的 `extension/` 目录。
 
@@ -59,19 +78,17 @@ npm install
 cp .env.example .env.local   # 填写数据库连接串与认证配置
 ```
 
-终端 1（本地 API 服务，Better Auth，端口 8787）：
+启动本地开发环境（两个终端）：
 
 ```bash
-npm run dev:api
+npm run dev:api   # 本地 API 服务（Better Auth，端口 8787）
+npm run dev       # 前端开发服务器（Vite 自动代理 /api）
 ```
 
-终端 2（前端开发服务器，Vite 自动代理 `/api`）：
+> [!TIP]
+> 不想配置本地数据库时，可直接在 Vercel 部署后使用在线环境。
 
-```bash
-npm run dev
-```
-
-## 使用
+## 📖 使用
 
 ### 网站
 
@@ -85,23 +102,11 @@ npm run dev
 
 ### 浏览器扩展
 
-1. 在浏览器中打开扩展弹窗，若检测到已存 token 或站点登录态则直接进入收藏界面，否则显示登录表单。
-2. 登录后弹窗自动填入当前页面的标题与 URL。
-3. 选择分类（不选则放入默认分类），点击「保存」，书签同步到账号。
+1. 打开扩展弹窗：已存 token 或站点登录态有效则直接进入收藏界面，否则显示登录表单。
+2. 弹窗自动填入当前页面的标题与 URL，选择分类（不选则放入默认分类）。
+3. 点击「保存」，书签同步到账号。
 
-### 常用命令
-
-```bash
-npm run dev           # 前端开发服务器
-npm run dev:api       # 本地 API 服务
-npm test              # 单元测试（Vitest）
-npm run test:e2e      # E2E 冒烟测试（Playwright）
-npm run build         # 生产构建（构建期自动执行数据库迁移）
-npm run db:generate   # 依据 schema 生成迁移 SQL（./drizzle）
-npm run db:migrate    # 应用迁移（使用 DATABASE_URL_UNPOOLED）
-```
-
-## 配置
+## ⚙️ 配置
 
 复制 `.env.example` 为 `.env.local` 并填写（本地开发）。生产环境在 Vercel 上配置同名变量，Neon 集成会自动注入前两个：
 
@@ -114,9 +119,32 @@ npm run db:migrate    # 应用迁移（使用 DATABASE_URL_UNPOOLED）
 
 前端不直接持有数据库连接串：所有数据读写经 Serverless Function 中转，由 `src/server/env.ts` 统一按全大写读取（小写写入自动兜底）。
 
-WebDAV 备份在应用内配置（头像菜单 → WebDAV 备份），填入地址、用户名与应用密码，不涉及环境变量。
+<details>
+<summary>WebDAV 备份配置（坚果云）</summary>
 
-## 项目结构
+登录后点击头像 →「WebDAV 备份」，填入 WebDAV 地址、用户名、应用密码（坚果云在「用户中心 → 安全 → 添加应用密码」生成）。
+
+- 备份：把当前账号全部分类 + 书签导出为 JSON，PUT 到 WebDAV 地址；父目录不存在时自动 MKCOL 创建。
+- 恢复：从 WebDAV 拉取 JSON 并预览数量（合并导入在后续迭代）。
+- 密码用 AES-256-GCM 加密后存入 `user_settings` 表（密钥来自 `BETTER_AUTH_SECRET`），接口不明文回传。
+
+</details>
+
+## 🛠️ 开发
+
+前置要求：Node.js、可选的 Neon Postgres 数据库（不配置时构建自动跳过迁移）。
+
+```bash
+npm test              # 单元测试（Vitest，mock API 客户端）
+npm run test:e2e      # E2E 冒烟测试（Playwright）
+npm run build         # 生产构建（构建期自动执行数据库迁移）
+npm run db:generate   # 依据 schema 生成迁移 SQL（./drizzle）
+npm run db:migrate    # 应用迁移（使用 DATABASE_URL_UNPOOLED）
+```
+
+测试只断言书签仓库的**外部行为**（最终状态、顺序、搜索结果），不断言内部实现细节。
+
+## 📁 项目结构
 
 ```text
 .
@@ -152,24 +180,24 @@ WebDAV 备份在应用内配置（头像菜单 → WebDAV 备份），填入地�
 └── package.json
 ```
 
-## 开发与扩展
+## 🧩 扩展
 
 - **新增 API 端点**：在 `api/` 下新建 `.ts` 文件，导出默认 `handler(req, res)`；鉴权统一使用 `src/server/request.ts` 的 `getRequestUser`。
 - **新增 UI 组件**：在 `src/components/ui/` 下按 ShadCN Vue 约定添加，样式用 Tailwind 工具类。
-- **数据库变更**：修改 `src/server/db/schema.ts` 后运行 `npm run db:generate` 生成迁移，部署时由 `scripts/migrate-on-build.mjs` 自动应用。
-- **数据层 seam**：所有数据读写经 `src/stores/bookmarks.ts`（书签仓库）中转，单元测试以仓库外部行为为准（Vitest + `vi.fn()` mock API）。
+- **数据库变更**：修改 `src/server/db/schema.ts` 后运行 `npm run db:generate`，部署时由 `scripts/migrate-on-build.mjs` 自动应用。
+- **数据层 seam**：所有数据读写经 `src/stores/bookmarks.ts`（书签仓库）中转，单元测试以仓库外部行为为准。
 - **浏览器扩展**：无构建步骤，直接编辑 `extension/` 下文件后到 `chrome://extensions` 刷新加载；部署地址变更时修改 `popup.js` 顶部的 `BASE` 常量。
-- **代码定位**：优先使用 CodeGraph 查询 / 定位，少用文本搜索。
 
-## 贡献
+## 🤝 贡献
 
-欢迎通过 GitHub Issues 提交缺陷与需求，通过 Pull Request 贡献代码。请确保提交前通过 `npm test` 与 `npm run build`。
+欢迎通过 [GitHub Issues](https://github.com/lsx-xyg/tabs/issues) 提交缺陷与需求，通过 Pull Request 贡献代码。提交前请确保通过 `npm test` 与 `npm run build`。
 
-## 常见问题
+<details>
+<summary>常见问题</summary>
 
 **离线修改后数据会丢吗？**
 
-不会。写操作会先进入本地队列并持久化到 `localStorage`，恢复网络后按队列顺序重放，冲突按最后写入时间（`updated_at`）合并。
+不会。写操作先进入本地队列并持久化到 `localStorage`，恢复网络后按队列顺序重放，冲突按最后写入时间（`updated_at`）合并。
 
 **扩展提示「保存失败，请先登录」怎么办？**
 
@@ -179,6 +207,8 @@ WebDAV 备份在应用内配置（头像菜单 → WebDAV 备份），填入地�
 
 加密后存入数据库 `user_settings` 表（AES-256-GCM，密钥来自 `BETTER_AUTH_SECRET`），接口不明文回传。
 
-## 许可证
+</details>
+
+## 📄 License
 
 本项目采用 [MIT License](./LICENSE)。
