@@ -4,6 +4,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
 ![Deploy](https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Web-4fc08d)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 一个自托管、可自定义的网页版书签导航应用：左侧分类导航，中间卡片式快捷访问，登录后数据跨设备同步。
 
@@ -180,4 +181,4 @@ WebDAV 备份在应用内配置（头像菜单 → WebDAV 备份），填入地�
 
 ## 许可证
 
-本项目尚未指定开源许可证（仓库中暂无 `LICENSE` 文件）。
+本项目采用 [MIT License](./LICENSE)。
