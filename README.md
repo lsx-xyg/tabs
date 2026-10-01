@@ -1,113 +1,183 @@
-# Tabs — 跨设备书签导航应用
+# Tabs
 
-一个自己掌控的网页版书签导航站：左侧分类导航，中间卡片式快捷访问，登录后数据跨设备同步。
+![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
+![Deploy](https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Web-4fc08d)
 
-## 技术栈
+一个自托管、可自定义的网页版书签导航应用：左侧分类导航，中间卡片式快捷访问，登录后数据跨设备同步。
 
-- **前端**：Vue 3 + TypeScript + Vite
-- **状态管理**：Pinia
-- **样式 / UI**：Tailwind CSS + ShadCN Vue（nova 风格，zinc 基础色，CSS variables）+ lucide-vue-next
-- **拖拽**：vue-draggable-plus
-- **测试**：Vitest（jsdom + @vue/test-utils）
-- **后端**：Neon Postgres + Drizzle ORM + Better Auth + Vercel Serverless Function（`/api/*`）
-- **部署**：Vercel / Netlify（均已配置 SPA 重写）
+## 目录
 
-> 说明：ShadCN Vue v2 已将原 "New York" 风格更名为 `nova`，基础色按新枚举取与 Slate 最接近的 `zinc`，均通过 `components.json` 可随时调整。
+- [项目简介](#项目简介)
+- [安装](#安装)
+- [使用](#使用)
+- [配置](#配置)
+- [项目结构](#项目结构)
+- [开发与扩展](#开发与扩展)
+- [贡献](#贡献)
+- [常见问题](#常见问题)
+- [许可证](#许可证)
 
-## 环境变量
+## 项目简介
 
-复制 `.env.example` 为 `.env.local` 并填写（本地开发）。生产环境在 Vercel 上配置同名变量（Neon 集成会自动注入前两个）：
+Tabs 是一个自己掌控数据的书签导航站，替代浏览器本地书签，解决跨设备同步问题：
+
+- 分类导航 + 卡片式快捷访问，点击卡片在新标签页打开
+- 邮箱登录（Better Auth），多设备登录同一账号数据一致
+- 书签与分类的增删改查、拖拽排序、拖拽移动分类
+- 跨分类搜索名称与 URL
+- 离线可用：本地缓存 + 离线队列，网络恢复后自动同步
+- 导入 / 导出 JSON，按 URL 自动去重
+- 自动抓取网站图标（favicon → Cravatar → 首字母占位）
+- 深色 / 浅色主题切换，跟随系统主题
+- 响应式布局（桌面 / 平板 / 手机），侧边栏可收缩
+- PWA，可安装到设备
+- 链接失效检测
+- WebDAV 备份（兼容坚果云），密码 AES-256-GCM 加密存储
+- Chrome 扩展（Manifest V3）：一键收藏当前网页，支持扩展内直接登录
+
+## 安装
+
+### 普通用户
+
+无需安装，直接访问已部署站点，注册登录即可使用。
+
+浏览器扩展（可选，一键收藏当前页）：
+
+1. 打开浏览器扩展管理页（Chrome / Edge 地址栏输入 `chrome://extensions`）。
+2. 开启右上角「开发者模式」。
+3. 点击「加载已解压的扩展程序」，选择本仓库的 `extension/` 目录。
+
+### 从源码安装
+
+```bash
+git clone https://github.com/lsx-xyg/tabs.git
+cd tabs
+npm install
+cp .env.example .env.local   # 填写数据库连接串与认证配置
+```
+
+终端 1（本地 API 服务，Better Auth，端口 8787）：
+
+```bash
+npm run dev:api
+```
+
+终端 2（前端开发服务器，Vite 自动代理 `/api`）：
+
+```bash
+npm run dev
+```
+
+## 使用
+
+### 网站
+
+1. 注册并登录（邮箱 + 密码）。
+2. 左侧栏新建分类；点击分类切换查看。
+3. 点击「添加书签」，填写名称、URL（省略协议时自动补全 `https://`）、选择分类；图标自动抓取。
+4. 点击卡片在新标签页打开网站。
+5. 拖拽卡片调整分类内顺序，或拖到其他分类上完成移动。
+6. 顶部搜索框跨所有分类匹配书签名称与 URL。
+7. 头像菜单中可导入 / 导出 JSON、切换主题、进行 WebDAV 备份、退出登录或删除账号。
+
+### 浏览器扩展
+
+1. 在浏览器中打开扩展弹窗，若检测到已存 token 或站点登录态则直接进入收藏界面，否则显示登录表单。
+2. 登录后弹窗自动填入当前页面的标题与 URL。
+3. 选择分类（不选则放入默认分类），点击「保存」，书签同步到账号。
+
+### 常用命令
+
+```bash
+npm run dev           # 前端开发服务器
+npm run dev:api       # 本地 API 服务
+npm test              # 单元测试（Vitest）
+npm run test:e2e      # E2E 冒烟测试（Playwright）
+npm run build         # 生产构建（构建期自动执行数据库迁移）
+npm run db:generate   # 依据 schema 生成迁移 SQL（./drizzle）
+npm run db:migrate    # 应用迁移（使用 DATABASE_URL_UNPOOLED）
+```
+
+## 配置
+
+复制 `.env.example` 为 `.env.local` 并填写（本地开发）。生产环境在 Vercel 上配置同名变量，Neon 集成会自动注入前两个：
 
 | 变量 | 用途 |
-|---|---|
+| --- | --- |
 | `DATABASE_URL` | Neon 池化连接串，运行时查询使用 |
 | `DATABASE_URL_UNPOOLED` | Neon 直连接串，数据库迁移（DDL）使用 |
 | `BETTER_AUTH_SECRET` | 会话签名密钥（`openssl rand -base64 32` 生成） |
 | `BETTER_AUTH_URL` | 部署后站点地址（生产必填） |
 
-前端**不直接持有数据库连接串**：所有数据读写经 Serverless Function 中转，由 `src/server/env.ts` 统一按全大写读取（小写写入自动兜底）。
+前端不直接持有数据库连接串：所有数据读写经 Serverless Function 中转，由 `src/server/env.ts` 统一按全大写读取（小写写入自动兜底）。
 
-## 部署（Vercel）
+WebDAV 备份在应用内配置（头像菜单 → WebDAV 备份），填入地址、用户名与应用密码，不涉及环境变量。
 
-`npm run build` 已内置自动迁移：构建时若检测到 `DATABASE_URL_UNPOOLED`（Vercel 环境注入），会先执行 `drizzle-kit migrate` 再构建前端产物，**首次部署即自动建表，无需手动跑迁移**；本地未配置该变量时自动跳过，不影响日常 `npm run build`。
+## 项目结构
 
-- 需在 Vercel 环境变量中确认 `DATABASE_URL_UNPOOLED` 的作用域包含 Production。
-- `BETTER_AUTH_SECRET` 与 `BETTER_AUTH_URL` 需手动配置（见上表）。
-
-## 快速开始
-
-```bash
-npm install
-cp .env.example .env.local   # 填写本地数据库连接
-
-# 终端 1：本地 API（Better Auth，端口 8787，Vite 自动代理 /api）
-npm run dev:api
-# 终端 2：前端
-npm run dev
-
-npm test          # 单元测试（Vitest）
-npm run build     # 生产构建
-npm run db:generate   # 依据 schema 生成迁移 SQL（./drizzle）
-npm run db:migrate    # 应用迁移（使用 DATABASE_URL_UNPOOLED）
+```text
+.
+├── api/                      # Vercel Serverless Function
+│   ├── auth/                 # Better Auth 路由（catch-all）
+│   ├── bookmarks.ts          # 书签 API
+│   ├── categories.ts         # 分类 API
+│   ├── extension-token.ts    # 扩展长期 token
+│   ├── favicon.ts            # favicon 抓取代理
+│   ├── health.ts             # 健康检查
+│   ├── settings.ts           # 用户设置（WebDAV 配置）
+│   └── webdav.ts             # WebDAV 备份 / 恢复代理
+├── extension/                # Chrome 扩展（Manifest V3，无需构建）
+├── server/                   # 本地 API 服务（npm run dev:api）
+├── scripts/
+│   └── migrate-on-build.mjs  # 构建期自动补表 + 迁移
+├── src/
+│   ├── components/ui/        # ShadCN Vue 组件
+│   ├── lib/                  # 前端工具（auth-client 等）
+│   ├── server/               # 服务端：env、db、schema、auth、request、encrypt
+│   ├── stores/               # Pinia 状态（书签仓库）
+│   ├── __tests__/            # 单元测试
+│   ├── App.vue               # 应用壳
+│   ├── main.ts
+│   └── style.css             # Tailwind 入口 + 主题变量
+├── e2e/                      # Playwright 冒烟测试
+├── drizzle/                  # Drizzle 迁移 SQL
+├── public/                   # 静态资源（PWA 图标、favicon）
+├── .env.example
+├── components.json
+├── netlify.toml
+├── vercel.json
+└── package.json
 ```
 
-## 目录结构
+## 开发与扩展
 
-```
-src/
-├── components/ui/     # ShadCN Vue 组件（button / card / dialog / input）
-├── lib/               # 前端工具（auth-client 等）
-├── server/            # 服务端：env 注入、db 连接、drizzle schema、auth 实例
-├── __tests__/         # 单元测试
-├── App.vue            # 应用壳（含认证面板）
-├── main.ts
-└── style.css          # Tailwind v4 入口 + 主题 CSS 变量
-api/auth/[...all].ts   # Vercel Serverless Function：Better Auth 路由
-server/dev-api.ts      # 本地 API 服务（npm run dev:api）
-drizzle/               # Drizzle 迁移 SQL
-```
+- **新增 API 端点**：在 `api/` 下新建 `.ts` 文件，导出默认 `handler(req, res)`；鉴权统一使用 `src/server/request.ts` 的 `getRequestUser`。
+- **新增 UI 组件**：在 `src/components/ui/` 下按 ShadCN Vue 约定添加，样式用 Tailwind 工具类。
+- **数据库变更**：修改 `src/server/db/schema.ts` 后运行 `npm run db:generate` 生成迁移，部署时由 `scripts/migrate-on-build.mjs` 自动应用。
+- **数据层 seam**：所有数据读写经 `src/stores/bookmarks.ts`（书签仓库）中转，单元测试以仓库外部行为为准（Vitest + `vi.fn()` mock API）。
+- **浏览器扩展**：无构建步骤，直接编辑 `extension/` 下文件后到 `chrome://extensions` 刷新加载；部署地址变更时修改 `popup.js` 顶部的 `BASE` 常量。
+- **代码定位**：优先使用 CodeGraph 查询 / 定位，少用文本搜索。
 
-## 开发约定
+## 贡献
 
-- UI 图标统一使用 `lucide-vue-next` 按需导入，不使用 `import * as icons`。
-- 组件内部 `<style>` 若用到 `@apply`，需加 `@reference` 指向 `src/style.css`。
-- 唯一核心 seam 为书签仓库（bookmark repository），后续迭代所有数据读写经它中转。
+欢迎通过 GitHub Issues 提交缺陷与需求，通过 Pull Request 贡献代码。请确保提交前通过 `npm test` 与 `npm run build`。
 
-## 浏览器扩展（一键收藏当前页）
+## 常见问题
 
-`extension/` 目录下是一个 Manifest V3 扩展，安装后点击图标即可把当前网页收藏到你的 Tabs 导航站。
+**离线修改后数据会丢吗？**
 
-### 安装
+不会。写操作会先进入本地队列并持久化到 `localStorage`，恢复网络后按队列顺序重放，冲突按最后写入时间（`updated_at`）合并。
 
-1. 先在浏览器里登录你的 Tabs 站点（如 `https://tabs.dbthree.dpdns.org`），保持登录态。
-2. 打开浏览器扩展管理页：
-   - Chrome / Edge：地址栏输入 `chrome://extensions`（Edge 为 `edge://extensions`）
-3. 打开右上角「开发者模式」。
-4. 点「加载已解压的扩展程序」，选择本仓库的 `extension/` 目录。
-5. 工具栏会出现 Tabs 图标。
+**扩展提示「保存失败，请先登录」怎么办？**
 
-### 使用
+扩展优先使用已存 token，其次尝试站点登录态 cookie，两者都没有时在弹窗内直接输入邮箱密码登录即可。
 
-- 浏览任意网页时，点工具栏的 Tabs 图标。
-- 弹窗自动填入当前页面的标题和 URL，并从服务器拉取你的分类列表。
-- 选择分类（不选则放入「未分类」），点「保存」。
-- 保存成功后弹窗自动关闭，书签已同步到账号，其他设备刷新即可看到。
+**WebDAV 密码存在哪里？**
 
-### 注意
+加密后存入数据库 `user_settings` 表（AES-256-GCM，密钥来自 `BETTER_AUTH_SECRET`），接口不明文回传。
 
-- 扩展依赖浏览器里已登录的 Tabs 站点会话（cookie），未登录会提示「保存失败，请先登录」。
-- 若部署地址不是默认的 `https://tabs.dbthree.dpdns.org`，需修改 `extension/popup.js` 顶部的 `BASE` 常量后重新加载扩展。
-- 扩展源码无构建步骤，直接加载目录即可。
+## 许可证
 
-## 备份（WebDAV / 坚果云）
-
-登录后点头像 →「WebDAV 备份」，填入 WebDAV 地址、用户名、应用密码（坚果云在「用户中心 → 安全 → 添加应用密码」生成）。
-
-- **备份**：把当前账号全部分类+书签导出为 JSON，PUT 到 WebDAV 地址；父目录不存在时自动 MKCOL 创建。
-- **恢复**：从 WebDAV 拉取 JSON（当前版本仅预览数量，合并导入后续迭代）。
-- 密码用 AES-256-GCM 加密后存入 `user_settings` 表（密钥来自 `BETTER_AUTH_SECRET`），不明文回传。
-
-## 工程化
-
-- Issue / Spec / Tickets 均托管在 GitHub Issues，见 `AGENTS.md` 与 `docs/agents/`。
-- Triage 标签：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。
+本项目尚未指定开源许可证（仓库中暂无 `LICENSE` 文件）。
