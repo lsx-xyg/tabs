@@ -614,6 +614,7 @@ const dragList = computed({
           <Button variant="ghost" size="icon-sm" @click="mdBreakpoint ? toggleSidebar() : sidebarOpen = true">
             <Menu class="w-4 h-4" />
           </Button>
+          <img src="/favicon.svg" alt="Tabs" class="h-5 w-5 rounded" />
           <h1 class="text-lg font-semibold tracking-tight">Tabs</h1>
         </div>
 
